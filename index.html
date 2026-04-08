@@ -107,7 +107,6 @@
 
       requestAnimationFrame(slowDownStep);
 
-      // ✅ 0.1 SECOND DELAY + 50/50 SOUND CHANCE
       setTimeout(() => {
         const roll = Math.random();
 
@@ -224,6 +223,35 @@
       else ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
     }
 
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight") paddle.dx = paddle.speed;
+      if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
+      if (e.key.toLowerCase() === "z") activateZaWarudo();
+    });
+
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
+    });
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPaddle();
+      drawBall();
+      drawBricks();
+      drawScore();
+      drawLives();
+
+      if (!gameOver) {
+        movePaddle();
+        moveBall();
+        brickCollision();
+        requestAnimationFrame(draw);
+      } else {
+        drawMessage();
+      }
+    }
+
     function movePaddle() {
       paddle.x += paddle.dx;
       if (paddle.x < 0) paddle.x = 0;
@@ -280,35 +308,6 @@
             }
           }
         }
-      }
-    }
-
-    document.addEventListener("keydown", e => {
-      if (e.key === "ArrowRight") paddle.dx = paddle.speed;
-      if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
-      if (e.key.toLowerCase() === "z") activateZaWarudo();
-    });
-
-    document.addEventListener("keyup", e => {
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
-    });
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      drawPaddle();
-      drawBall();
-      drawBricks();
-      drawScore();
-      drawLives();
-
-      if (!gameOver) {
-        movePaddle();
-        moveBall();
-        brickCollision();
-        requestAnimationFrame(draw);
-      } else {
-        drawMessage();
       }
     }
 
