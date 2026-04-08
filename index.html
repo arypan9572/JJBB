@@ -72,6 +72,10 @@
 
     let timeStopped = false;
 
+    // ================= FIX: store original speed =================
+    let savedBallSpeedX = 0;
+    let savedBallSpeedY = 0;
+
     function activateZaWarudo() {
       if (timeStopped) return;
 
@@ -80,6 +84,10 @@
 
       zaWarudoSound.currentTime = 0;
       zaWarudoSound.play().catch(() => {});
+
+      // SAVE SPEED BEFORE FREEZE
+      savedBallSpeedX = ball.speedX;
+      savedBallSpeedY = ball.speedY;
 
       // =========================
       // 0.5s gradual slowdown
@@ -115,10 +123,15 @@
       }, 5700);
 
       // =========================
-      // keep time stopped
+      // restore time properly (FIXED)
       // =========================
       setTimeout(() => {
         timeStopped = false;
+
+        // RESTORE SPEED (THIS FIXES YOUR BROKEN BALL)
+        ball.speedX = savedBallSpeedX;
+        ball.speedY = savedBallSpeedY;
+
         document.body.classList.remove("za-warudo");
       }, 8000);
     }
