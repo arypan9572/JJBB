@@ -57,7 +57,7 @@
     const ctx = canvas.getContext("2d");
 
     // =========================
-    // AUDIO FIX (UPDATED)
+    // AUDIO FIX (UPDATED ONLY TIMING)
     // =========================
     const zaWarudoSound = document.getElementById("zaWarudoSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
@@ -97,11 +97,10 @@
       zaWarudoSound.currentTime = 0;
       zaWarudoSound.play().catch(() => console.log("Sound blocked"));
 
-      // 🔥 TIMESTOP LENGTH = 8.000s
       const timeStopDuration = 8000;
 
-      // 🔥 time resumes = 8.000 - 2.832 = 5.168 seconds
-      const resumeDelay = timeStopDuration - 2832;
+      // 🔥 CHANGED ONLY THIS LINE LOGIC:
+      const resumeDelay = 5230; // 5.23 seconds
 
       setTimeout(() => {
         timeResumeSound.currentTime = 0;
