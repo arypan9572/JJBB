@@ -36,16 +36,47 @@
     .za-warudo {
       filter: grayscale(1) contrast(1.4) brightness(0.7);
     }
+
+    /* ===== ADDED UI ===== */
+    #cooldownBar {
+      width: 300px;
+      height: 12px;
+      border: 2px solid white;
+      margin-top: 10px;
+      position: relative;
+    }
+
+    #cooldownFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, purple, cyan);
+      transition: width 0.2s linear;
+    }
+
+    #restartBtn {
+      margin-top: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body>
   <h1>Breakout Starter Game</h1>
+
   <canvas id="gameCanvas" width="800" height="500"></canvas>
 
   <div class="instructions">
     Arrow keys to move • Press Z to activate ZA WARUDO
   </div>
+
+  <!-- COOLDOWN BAR -->
+  <div id="cooldownBar">
+    <div id="cooldownFill"></div>
+  </div>
+
+  <!-- RESTART -->
+  <button id="restartBtn">Restart</button>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3" preload="auto"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3" preload="auto"></audio>
@@ -56,6 +87,8 @@
 
     const zaWarudoSound = document.getElementById("zaWarudoSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
+
+    const cooldownFill = document.getElementById("cooldownFill");
 
     let audioUnlocked = false;
     function unlockAudio() {
@@ -72,69 +105,65 @@
 
     let timeStopped = false;
 
-    // ================= FIX: store original speed =================
-    let savedBallSpeedX = 0;
-    let savedBallSpeedY = 0;
+    /* ===== COOLDOWN SYSTEM (THE WORLD BAR) ===== */
+    let cooldown = 100;
+    let canUsePower = true;
+
+    function updateCooldown() {
+      if (cooldown < 100) {
+        cooldown += 0.3; // fills over time (~15s full cycle)
+        if (cooldown >= 100) {
+          cooldown = 100;
+          canUsePower = true;
+        }
+      }
+      cooldownFill.style.width = cooldown + "%";
+      requestAnimationFrame(updateCooldown);
+    }
+    updateCooldown();
 
     function activateZaWarudo() {
-      if (timeStopped) return;
+      if (timeStopped || !canUsePower) return;
 
       timeStopped = true;
+      canUsePower = false;
+      cooldown = 0;
+
       document.body.classList.add("za-warudo");
 
       zaWarudoSound.currentTime = 0;
       zaWarudoSound.play().catch(() => {});
 
-      // SAVE SPEED BEFORE FREEZE
-      savedBallSpeedX = ball.speedX;
-      savedBallSpeedY = ball.speedY;
-
-      // =========================
-      // 0.5s gradual slowdown
-      // =========================
-      const slowdownTime = 500;
       const startSpeedX = ball.speedX;
       const startSpeedY = ball.speedY;
-
       const start = performance.now();
 
-      function slowDownStep(now) {
-        const t = Math.min((now - start) / slowdownTime, 1);
-
+      function slowDown(now) {
+        const t = Math.min((now - start) / 500, 1);
         ball.speedX = startSpeedX * (1 - t);
         ball.speedY = startSpeedY * (1 - t);
 
-        if (t < 1) {
-          requestAnimationFrame(slowDownStep);
-        } else {
+        if (t < 1) requestAnimationFrame(slowDown);
+        else {
           ball.speedX = 0;
           ball.speedY = 0;
         }
       }
 
-      requestAnimationFrame(slowDownStep);
+      requestAnimationFrame(slowDown);
 
-      // =========================
-      // sound at 5.7 seconds
-      // =========================
       setTimeout(() => {
         timeResumeSound.currentTime = 0;
         timeResumeSound.play().catch(() => {});
-      }, 5700);
+      }, 5800);
 
-      // =========================
-      // restore time properly (FIXED)
-      // =========================
       setTimeout(() => {
         timeStopped = false;
-
-        // RESTORE SPEED (THIS FIXES YOUR BROKEN BALL)
-        ball.speedX = savedBallSpeedX;
-        ball.speedY = savedBallSpeedY;
-
         document.body.classList.remove("za-warudo");
       }, 8000);
     }
+
+    /* ===== REST OF YOUR GAME (UNCHANGED LOGIC) ===== */
 
     const paddle = {
       width: 120,
@@ -293,6 +322,11 @@
     document.addEventListener("keyup", e => {
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
     });
+
+    /* ===== RESTART BUTTON ===== */
+    document.getElementById("restartBtn").onclick = () => {
+      location.reload();
+    };
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
