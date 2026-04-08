@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Breakout Starter</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      transition: filter 0.3s ease;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    canvas {
+      background: black;
+      border: 3px solid white;
+    }
+
+    .instructions {
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    /* ZA WARUDO FILTER */
+    .za-warudo {
+      filter: grayscale(1) contrast(1.4) brightness(0.7);
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Breakout Starter Game</h1>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+  <div class="instructions">
+    Arrow keys to move • Press Z to activate ZA WARUDO
+  </div>
+
+  <!-- AUDIO -->
+  <audio id="zaWarudoSound" src="zawarudo.mp3" preload="auto"></audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // =========================
+    // AUDIO FIX (UPDATED)
+    // =========================
+    const zaWarudoSound = document.getElementById("zaWarudoSound");
+    zaWarudoSound.load();
+
+    let audioUnlocked = false;
+
+    function unlockAudio() {
+      if (audioUnlocked) return;
+
+      zaWarudoSound.volume = 1.0;
+
+      const p = zaWarudoSound.play();
+      if (p !== undefined) {
+        p.then(() => {
+          zaWarudoSound.pause();
+          zaWarudoSound.currentTime = 0;
+          audioUnlocked = true;
+        }).catch(err => {
+          console.log("Audio still locked:", err);
+        });
+      }
+    }
+
+    // unlock on first interaction (click OR keypress)
+    window.addEventListener("click", unlockAudio, { once: true });
+    window.addEventListener("keydown", unlockAudio, { once: true });
+
+    // =========================
+    // ZA WARUDO (UPDATED)
+    // =========================
+    let timeStopped = false;
+
+    function activateZaWarudo() {
+      if (timeStopped) return;
+
+      timeStopped = true;
+
+      document.body.classList.add("za-warudo");
+
+      zaWarudoSound.currentTime = 0;
+
+      const playPromise = zaWarudoSound.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => console.log("Sound blocked:", err));
+      }
+
+      // 🔥 LONGER TIMESTOP (was 3000ms → now 8000ms)
+      setTimeout(() => {
+        timeStopped = false;
+        document.body.classList.remove("za-warudo");
+      }, 8000);
+    }
+
+    // =========================
+    // GAME SETTINGS
+    // =========================
+    const paddle = {
+      width: 120,
+      height: 15,
+      x: canvas.width / 2 - 60,
+      y: canvas.height - 30,
+      speed: 8,
+      dx: 0
+    };
+
+    const ball = {
+      x: canvas.width / 2,
+      y: canvas.height - 50,
+      radius: 10,
+      speedX: 4,
+      speedY: -4
+    };
+
+    const brickInfo = {
+      rows: 4,
+      cols: 8,
+      width: 85,
+      height: 25,
+      padding: 10,
+      offsetTop: 50,
+      offsetLeft: 20
+    };
+
+    let score = 0;
+    let lives = 3;
+    let gameOver = false;
+    let win = false;
+
+    const bricks = [];
+
+    for (let r = 0; r < brickInfo.rows; r++) {
+      bricks[r] = [];
+      for (let c = 0; c < brickInfo.cols; c++) {
+        bricks[r][c] = { x: 0, y: 0, visible: true };
+      }
+    }
+
+    // =========================
+    // DRAW
+    // =========================
+    function drawPaddle() {
+      ctx.fillStyle = "white";
+      ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    }
+
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = "orange";
+      ctx.fill();
+    }
+
+    function drawBricks() {
+      for (let r = 0; r < brickInfo.rows; r++) {
+        for (let c = 0; c < brickInfo.cols; c++) {
+          const brick = bricks[r][c];
+          if (brick.visible) {
+            const brickX = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
+            const brickY = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
+
+            brick.x = brickX;
+            brick.y = brickY;
+
+            ctx.fillStyle = "deepskyblue";
+            ctx.fillRect(brickX, brickY, brickInfo.width, brickInfo.height);
+          }
+        }
+      }
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "white";
+      ctx.fillText("Score: " + score, 20, 30);
+    }
+
+    function drawLives() {
+      ctx.fillStyle = "white";
+      ctx.fillText("Lives: " + lives, canvas.width - 100, 30);
+    }
+
+    function drawMessage() {
+      ctx.textAlign = "center";
+      ctx.font = "40px Arial";
+
+      if (win) ctx.fillText("YOU WIN!", canvas.width/2, canvas.height/2);
+      else ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+    }
+
+    // =========================
+    // MOVEMENT
+    // =========================
+    function movePaddle() {
+      paddle.x += paddle.dx;
+      if (paddle.x < 0) paddle.x = 0;
+      if (paddle.x + paddle.width > canvas.width)
+        paddle.x = canvas.width - paddle.width;
+    }
+
+    function moveBall() {
+      if (timeStopped) return;
+
+      ball.x += ball.speedX;
+      ball.y += ball.speedY;
+
+      if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0)
+        ball.speedX *= -1;
+
+      if (ball.y - ball.radius < 0)
+        ball.speedY *= -1;
+
+      if (
+        ball.y + ball.radius > paddle.y &&
+        ball.x > paddle.x &&
+        ball.x < paddle.x + paddle.width
+      ) {
+        ball.speedY *= -1;
+      }
+
+      if (ball.y + ball.radius > canvas.height) {
+        lives--;
+        if (lives <= 0) gameOver = true;
+      }
+    }
+
+    function brickCollision() {
+      if (timeStopped) return;
+
+      for (let r = 0; r < brickInfo.rows; r++) {
+        for (let c = 0; c < brickInfo.cols; c++) {
+          const brick = bricks[r][c];
+
+          if (brick.visible &&
+              ball.x > brick.x &&
+              ball.x < brick.x + brickInfo.width &&
+              ball.y > brick.y &&
+              ball.y < brick.y + brickInfo.height) {
+
+            ball.speedY *= -1;
+            brick.visible = false;
+            score++;
+
+            if (score === brickInfo.rows * brickInfo.cols) {
+              gameOver = true;
+              win = true;
+            }
+          }
+        }
+      }
+    }
+
+    // =========================
+    // CONTROLS
+    // =========================
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowRight") paddle.dx = paddle.speed;
+      if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
+
+      if (e.key.toLowerCase() === "z") activateZaWarudo();
+    });
+
+    document.addEventListener("keyup", e => {
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
+    });
+
+    // =========================
+    // LOOP
+    // =========================
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPaddle();
+      drawBall();
+      drawBricks();
+      drawScore();
+      drawLives();
+
+      if (!gameOver) {
+        movePaddle();
+        moveBall();
+        brickCollision();
+        requestAnimationFrame(draw);
+      } else {
+        drawMessage();
+      }
+    }
+
+    draw();
+  </script>
+</body>
+</html>
