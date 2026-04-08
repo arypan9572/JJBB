@@ -33,7 +33,6 @@
       max-width: 500px;
     }
 
-    /* ZA WARUDO FILTER */
     .za-warudo {
       filter: grayscale(1) contrast(1.4) brightness(0.7);
     }
@@ -48,7 +47,6 @@
     Arrow keys to move • Press Z to activate ZA WARUDO
   </div>
 
-  <!-- AUDIO -->
   <audio id="zaWarudoSound" src="zawarudo.mp3" preload="auto"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3" preload="auto"></audio>
 
@@ -56,36 +54,22 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // =========================
-    // AUDIO FIX (UPDATED ONLY TIMING)
-    // =========================
     const zaWarudoSound = document.getElementById("zaWarudoSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
 
-    zaWarudoSound.load();
-    timeResumeSound.load();
-
     let audioUnlocked = false;
-
     function unlockAudio() {
       if (audioUnlocked) return;
-
-      const p = zaWarudoSound.play();
-      if (p !== undefined) {
-        p.then(() => {
-          zaWarudoSound.pause();
-          zaWarudoSound.currentTime = 0;
-          audioUnlocked = true;
-        }).catch(() => {});
-      }
+      zaWarudoSound.play().then(() => {
+        zaWarudoSound.pause();
+        zaWarudoSound.currentTime = 0;
+        audioUnlocked = true;
+      }).catch(() => {});
     }
 
     window.addEventListener("click", unlockAudio, { once: true });
     window.addEventListener("keydown", unlockAudio, { once: true });
 
-    // =========================
-    // ZA WARUDO
-    // =========================
     let timeStopped = false;
 
     function activateZaWarudo() {
@@ -95,27 +79,50 @@
       document.body.classList.add("za-warudo");
 
       zaWarudoSound.currentTime = 0;
-      zaWarudoSound.play().catch(() => console.log("Sound blocked"));
+      zaWarudoSound.play().catch(() => {});
 
-      const timeStopDuration = 8000;
+      // =========================
+      // 0.5s gradual slowdown
+      // =========================
+      const slowdownTime = 500;
+      const startSpeedX = ball.speedX;
+      const startSpeedY = ball.speedY;
 
-      // 🔥 CHANGED ONLY THIS LINE LOGIC:
-      const resumeDelay = 5230; // 5.23 seconds
+      const start = performance.now();
 
+      function slowDownStep(now) {
+        const t = Math.min((now - start) / slowdownTime, 1);
+
+        ball.speedX = startSpeedX * (1 - t);
+        ball.speedY = startSpeedY * (1 - t);
+
+        if (t < 1) {
+          requestAnimationFrame(slowDownStep);
+        } else {
+          ball.speedX = 0;
+          ball.speedY = 0;
+        }
+      }
+
+      requestAnimationFrame(slowDownStep);
+
+      // =========================
+      // sound at 5.7 seconds
+      // =========================
       setTimeout(() => {
         timeResumeSound.currentTime = 0;
-        timeResumeSound.play().catch(() => console.log("Resume sound blocked"));
-      }, resumeDelay);
+        timeResumeSound.play().catch(() => {});
+      }, 5700);
 
+      // =========================
+      // keep time stopped
+      // =========================
       setTimeout(() => {
         timeStopped = false;
         document.body.classList.remove("za-warudo");
-      }, timeStopDuration);
+      }, 8000);
     }
 
-    // =========================
-    // GAME SETTINGS (UNCHANGED)
-    // =========================
     const paddle = {
       width: 120,
       height: 15,
@@ -267,7 +274,6 @@
     document.addEventListener("keydown", e => {
       if (e.key === "ArrowRight") paddle.dx = paddle.speed;
       if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
-
       if (e.key.toLowerCase() === "z") activateZaWarudo();
     });
 
