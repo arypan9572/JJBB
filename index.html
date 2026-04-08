@@ -50,6 +50,7 @@
 
   <!-- AUDIO -->
   <audio id="zaWarudoSound" src="zawarudo.mp3" preload="auto"></audio>
+  <audio id="timeResumeSound" src="time resumes.mp3" preload="auto"></audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -59,14 +60,15 @@
     // AUDIO FIX (UPDATED)
     // =========================
     const zaWarudoSound = document.getElementById("zaWarudoSound");
+    const timeResumeSound = document.getElementById("timeResumeSound");
+
     zaWarudoSound.load();
+    timeResumeSound.load();
 
     let audioUnlocked = false;
 
     function unlockAudio() {
       if (audioUnlocked) return;
-
-      zaWarudoSound.volume = 1.0;
 
       const p = zaWarudoSound.play();
       if (p !== undefined) {
@@ -74,18 +76,15 @@
           zaWarudoSound.pause();
           zaWarudoSound.currentTime = 0;
           audioUnlocked = true;
-        }).catch(err => {
-          console.log("Audio still locked:", err);
-        });
+        }).catch(() => {});
       }
     }
 
-    // unlock on first interaction (click OR keypress)
     window.addEventListener("click", unlockAudio, { once: true });
     window.addEventListener("keydown", unlockAudio, { once: true });
 
     // =========================
-    // ZA WARUDO (UPDATED)
+    // ZA WARUDO
     // =========================
     let timeStopped = false;
 
@@ -93,25 +92,30 @@
       if (timeStopped) return;
 
       timeStopped = true;
-
       document.body.classList.add("za-warudo");
 
       zaWarudoSound.currentTime = 0;
+      zaWarudoSound.play().catch(() => console.log("Sound blocked"));
 
-      const playPromise = zaWarudoSound.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(err => console.log("Sound blocked:", err));
-      }
+      // 🔥 TIMESTOP LENGTH = 8.000s
+      const timeStopDuration = 8000;
 
-      // 🔥 LONGER TIMESTOP (was 3000ms → now 8000ms)
+      // 🔥 time resumes = 8.000 - 2.832 = 5.168 seconds
+      const resumeDelay = timeStopDuration - 2832;
+
+      setTimeout(() => {
+        timeResumeSound.currentTime = 0;
+        timeResumeSound.play().catch(() => console.log("Resume sound blocked"));
+      }, resumeDelay);
+
       setTimeout(() => {
         timeStopped = false;
         document.body.classList.remove("za-warudo");
-      }, 8000);
+      }, timeStopDuration);
     }
 
     // =========================
-    // GAME SETTINGS
+    // GAME SETTINGS (UNCHANGED)
     // =========================
     const paddle = {
       width: 120,
@@ -154,9 +158,6 @@
       }
     }
 
-    // =========================
-    // DRAW
-    // =========================
     function drawPaddle() {
       ctx.fillStyle = "white";
       ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
@@ -205,9 +206,6 @@
       else ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
     }
 
-    // =========================
-    // MOVEMENT
-    // =========================
     function movePaddle() {
       paddle.x += paddle.dx;
       if (paddle.x < 0) paddle.x = 0;
@@ -267,9 +265,6 @@
       }
     }
 
-    // =========================
-    // CONTROLS
-    // =========================
     document.addEventListener("keydown", e => {
       if (e.key === "ArrowRight") paddle.dx = paddle.speed;
       if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
@@ -281,9 +276,6 @@
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
     });
 
-    // =========================
-    // LOOP
-    // =========================
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
