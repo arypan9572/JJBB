@@ -48,6 +48,7 @@
   </div>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3" preload="auto"></audio>
+  <audio id="tomattaSound" src="tomatta.mp3" preload="auto"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3" preload="auto"></audio>
 
   <script>
@@ -55,6 +56,7 @@
     const ctx = canvas.getContext("2d");
 
     const zaWarudoSound = document.getElementById("zaWarudoSound");
+    const tomattaSound = document.getElementById("tomattaSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
 
     let audioUnlocked = false;
@@ -72,7 +74,6 @@
 
     let timeStopped = false;
 
-    // ================= FIX: store original speed =================
     let savedBallSpeedX = 0;
     let savedBallSpeedY = 0;
 
@@ -82,20 +83,12 @@
       timeStopped = true;
       document.body.classList.add("za-warudo");
 
-      zaWarudoSound.currentTime = 0;
-      zaWarudoSound.play().catch(() => {});
-
-      // SAVE SPEED BEFORE FREEZE
       savedBallSpeedX = ball.speedX;
       savedBallSpeedY = ball.speedY;
 
-      // =========================
-      // 0.5s gradual slowdown
-      // =========================
       const slowdownTime = 500;
       const startSpeedX = ball.speedX;
       const startSpeedY = ball.speedY;
-
       const start = performance.now();
 
       function slowDownStep(now) {
@@ -114,21 +107,27 @@
 
       requestAnimationFrame(slowDownStep);
 
-      // =========================
-      // sound at 5.7 seconds
-      // =========================
+      // ✅ 0.1 SECOND DELAY + 50/50 SOUND CHANCE
+      setTimeout(() => {
+        const roll = Math.random();
+
+        if (roll < 0.5) {
+          zaWarudoSound.currentTime = 0;
+          zaWarudoSound.play().catch(() => {});
+        } else {
+          tomattaSound.currentTime = 0;
+          tomattaSound.play().catch(() => {});
+        }
+      }, 100);
+
       setTimeout(() => {
         timeResumeSound.currentTime = 0;
         timeResumeSound.play().catch(() => {});
       }, 5700);
 
-      // =========================
-      // restore time properly (FIXED)
-      // =========================
       setTimeout(() => {
         timeStopped = false;
 
-        // RESTORE SPEED (THIS FIXES YOUR BROKEN BALL)
         ball.speedX = savedBallSpeedX;
         ball.speedY = savedBallSpeedY;
 
