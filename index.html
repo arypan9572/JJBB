@@ -37,6 +37,7 @@
       filter: grayscale(1) contrast(1.4) brightness(0.7);
     }
 
+    /* ZA WARUDO TEXT */
     #zaText {
       position: fixed;
       top: 40%;
@@ -60,6 +61,17 @@
       60% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
+
+    /* 💥 BITES THE DUST EFFECT */
+    .bites-effect {
+      animation: bitesPulse 0.4s infinite;
+    }
+
+    @keyframes bitesPulse {
+      0% { filter: hue-rotate(0deg) brightness(1); }
+      50% { filter: hue-rotate(260deg) brightness(1.4); }
+      100% { filter: hue-rotate(0deg) brightness(1); }
+    }
   </style>
 </head>
 
@@ -70,12 +82,13 @@
   <div id="zaText">ZA WARUDO</div>
 
   <div class="instructions">
-    Arrow keys to move • Press Z to activate ZA WARUDO
+    Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
   </div>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
+  <audio id="bitesSound" src="bites.mp3"></audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -84,17 +97,20 @@
     const zaWarudoSound = document.getElementById("zaWarudoSound");
     const tomattaSound = document.getElementById("tomattaSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
+    const bitesSound = document.getElementById("bitesSound");
 
     const zaText = document.getElementById("zaText");
 
     let timeStopped = false;
+    let bitesActive = false;
+
     let savedBallSpeedX = 0;
     let savedBallSpeedY = 0;
 
     let bricksCleared = false;
 
     function activateZaWarudo() {
-      if (timeStopped) return;
+      if (timeStopped || bitesActive) return;
 
       timeStopped = true;
       document.body.classList.add("za-warudo");
@@ -141,6 +157,37 @@
       }, 8000);
     }
 
+    // 💥 BITES THE DUST
+    function activateBites() {
+      if (bitesActive || timeStopped) return;
+
+      bitesActive = true;
+
+      savedBallSpeedX = ball.speedX;
+      savedBallSpeedY = ball.speedY;
+
+      ball.speedX = 0;
+      ball.speedY = 0;
+
+      bitesSound.currentTime = 0;
+      bitesSound.play().catch(()=>{});
+
+      document.body.classList.add("bites-effect");
+
+      setTimeout(() => {
+        document.body.classList.remove("bites-effect");
+
+        // RESET BALL (NO LIFE LOSS)
+        const newAngle = randomAngle();
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height - 50;
+        ball.speedX = newAngle.x;
+        ball.speedY = newAngle.y;
+
+        bitesActive = false;
+      }, 8000);
+    }
+
     const paddle = {
       width: 120,
       height: 15,
@@ -150,7 +197,6 @@
       dx: 0
     };
 
-    // 🎯 RANDOM START ANGLE
     function randomAngle() {
       const angle = (Math.random() * Math.PI / 2) + Math.PI / 4;
       const speed = 4;
@@ -206,7 +252,6 @@
       ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
     }
 
-    // ✨ BALL TRAIL
     let trail = [];
 
     function drawBall() {
@@ -262,18 +307,15 @@
 
     function movePaddle() {
       paddle.x += paddle.dx;
-
-      // ✅ HARD CLAMP (never off screen)
       paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
     }
 
     function moveBall() {
-      if (timeStopped) return;
+      if (timeStopped || bitesActive) return;
 
       ball.x += ball.speedX;
       ball.y += ball.speedY;
 
-      // ⚡ SPEED INCREASE
       ball.speedX *= 1.0005;
       ball.speedY *= 1.0005;
 
@@ -302,7 +344,6 @@
         if (lives <= 0) {
           gameOver = true;
         } else {
-          // reset ball
           const newAngle = randomAngle();
           ball.x = canvas.width / 2;
           ball.y = canvas.height - 50;
@@ -313,7 +354,7 @@
     }
 
     function brickCollision() {
-      if (timeStopped) return;
+      if (timeStopped || bitesActive) return;
 
       for (let r = 0; r < brickInfo.rows; r++) {
         for (let c = 0; c < brickInfo.cols; c++) {
@@ -341,6 +382,7 @@
       if (e.key === "ArrowRight") paddle.dx = paddle.speed;
       if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
       if (e.key.toLowerCase() === "z") activateZaWarudo();
+      if (e.key.toLowerCase() === "x") activateBites();
     });
 
     document.addEventListener("keyup", e => {
@@ -348,7 +390,6 @@
     });
 
     function draw() {
-      // 🌀 LIGHT MOTION BLUR
       ctx.fillStyle = "rgba(0,0,0,0.25)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
