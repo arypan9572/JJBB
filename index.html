@@ -37,6 +37,7 @@
       filter: grayscale(1) contrast(1.4) brightness(0.7);
     }
 
+    /* ZA WARUDO TEXT */
     #zaText {
       position: fixed;
       top: 40%;
@@ -61,6 +62,7 @@
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
 
+    /* 💥 BITES THE DUST EFFECT */
     .bites-effect {
       animation: bitesPulse 0.4s infinite;
     }
@@ -80,7 +82,7 @@
   <div id="zaText">ZA WARUDO</div>
 
   <div class="instructions">
-    Arrow keys to move • Z = ZA WARUDO • X = BITES THE DUST
+    Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
   </div>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
@@ -155,7 +157,7 @@
       }, 8000);
     }
 
-    // 💥 BITES THE DUST (RESTORED + FIXED)
+    // 💥 BITES THE DUST
     function activateBites() {
       if (bitesActive || timeStopped) return;
 
@@ -175,6 +177,7 @@
       setTimeout(() => {
         document.body.classList.remove("bites-effect");
 
+        // RESET BALL (NO LIFE LOSS)
         const newAngle = randomAngle();
         ball.x = canvas.width / 2;
         ball.y = canvas.height - 50;
@@ -272,7 +275,6 @@
       for (let r = 0; r < brickInfo.rows; r++) {
         for (let c = 0; c < brickInfo.cols; c++) {
           const brick = bricks[r][c];
-
           if (brick.visible) {
             const brickX = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
             const brickY = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
