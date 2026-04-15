@@ -1,3 +1,96 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Breakout Starter</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      transition: filter 0.3s ease;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    canvas {
+      background: black;
+      border: 3px solid white;
+    }
+
+    .instructions {
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    .za-warudo {
+      filter: grayscale(1) contrast(1.4) brightness(0.7);
+    }
+
+    /* ZA WARUDO TEXT */
+    #zaText {
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(1);
+      font-size: 80px;
+      font-weight: bold;
+      color: rgba(255, 200, 50, 0.9);
+      text-shadow: 
+        0 0 10px rgba(255,200,50,0.8),
+        0 0 20px rgba(255,100,200,0.6),
+        0 0 30px rgba(0,150,255,0.6);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    @keyframes zaEcho {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+      20% { opacity: 1; }
+      60% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+    }
+
+    /* 💥 BITES THE DUST EFFECT */
+    .bites-effect {
+      animation: bitesPulse 0.4s infinite;
+    }
+
+    @keyframes bitesPulse {
+      0% { filter: hue-rotate(0deg) brightness(1); }
+      50% { filter: hue-rotate(260deg) brightness(1.4); }
+      100% { filter: hue-rotate(0deg) brightness(1); }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Breakout Starter Game</h1>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+  <div id="zaText">ZA WARUDO</div>
+
+  <div class="instructions">
+    Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
+  </div>
+
+  <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
+  <audio id="tomattaSound" src="tomatta.mp3"></audio>
+  <audio id="timeResumeSound" src="time resumes.mp3"></audio>
+  <audio id="bitesSound" src="bites.mp3"></audio>
+
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -368,3 +461,6 @@ function draw() {
 
 draw();
 </script>
+
+</body>
+</html>
