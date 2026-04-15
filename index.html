@@ -51,59 +51,6 @@
 <canvas id="gameCanvas" width="800" height="500"></canvas>
 <div id="zaText">ZA WARUDO</div>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Breakout Starter</title>
-
-  <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-
-    canvas {
-      background: black;
-      border: 3px solid white;
-    }
-
-    .za-warudo {
-      filter: grayscale(1) contrast(1.4) brightness(0.7);
-    }
-
-    #zaText {
-      position: fixed;
-      top: 40%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 80px;
-      font-weight: bold;
-      color: rgba(255, 200, 50, 0.9);
-      opacity: 0;
-    }
-
-    @keyframes zaEcho {
-      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-      20% { opacity: 1; }
-      60% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
-      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-    }
-  </style>
-</head>
-
-<body>
-<canvas id="gameCanvas" width="800" height="500"></canvas>
-<div id="zaText">ZA WARUDO</div>
-
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -399,7 +346,5 @@ function draw() {
 
 draw();
 </script>
-</body>
-</html>
 </body>
 </html>
