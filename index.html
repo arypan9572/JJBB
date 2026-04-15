@@ -90,326 +90,315 @@
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
   <audio id="bitesSound" src="bites.mp3"></audio>
 
-  <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
 
-    const zaWarudoSound = document.getElementById("zaWarudoSound");
-    const tomattaSound = document.getElementById("tomattaSound");
-    const timeResumeSound = document.getElementById("timeResumeSound");
-    const bitesSound = document.getElementById("bitesSound");
+const zaWarudoSound = document.getElementById("zaWarudoSound");
+const tomattaSound = document.getElementById("tomattaSound");
+const timeResumeSound = document.getElementById("timeResumeSound");
+const bitesSound = document.getElementById("bitesSound");
 
-    const zaText = document.getElementById("zaText");
+const zaText = document.getElementById("zaText");
 
-    let timeStopped = false;
-    let bitesActive = false;
+let timeStopped = false;
+let bitesActive = false;
+let rewinding = false;
 
-    let savedBallSpeedX = 0;
-    let savedBallSpeedY = 0;
+let ballHistory = [];
+let rewindIndex = 0;
+let rewindProgress = 0;
 
-    let bricksCleared = false;
+let highlightPoints = [];
 
-    function activateZaWarudo() {
-      if (timeStopped || bitesActive) return;
+function activateBites() {
+  if (bitesActive || timeStopped) return;
 
-      timeStopped = true;
-      document.body.classList.add("za-warudo");
+  bitesActive = true;
+  rewinding = true;
 
-      savedBallSpeedX = ball.speedX;
-      savedBallSpeedY = ball.speedY;
+  bitesSound.currentTime = 0;
+  bitesSound.play().catch(()=>{});
 
-      const startSpeedX = ball.speedX;
-      const startSpeedY = ball.speedY;
-      const start = performance.now();
+  document.body.classList.add("bites-effect");
 
-      function slowDownStep(now) {
-        const t = Math.min((now - start) / 500, 1);
-        ball.speedX = startSpeedX * (1 - t);
-        ball.speedY = startSpeedY * (1 - t);
+  // pick random highlight points
+  highlightPoints = [];
+  for (let i = 0; i < 6; i++) {
+    highlightPoints.push(
+      Math.floor(Math.random() * ballHistory.length)
+    );
+  }
 
-        if (t < 1) requestAnimationFrame(slowDownStep);
-        else {
-          ball.speedX = 0;
-          ball.speedY = 0;
-        }
-      }
+  rewindIndex = ballHistory.length - 1;
+  rewindProgress = 0;
 
-      requestAnimationFrame(slowDownStep);
+  setTimeout(() => {
+    document.body.classList.remove("bites-effect");
 
-      setTimeout(() => {
-        (Math.random() < 0.5 ? zaWarudoSound : tomattaSound).play();
+    // reset ball at end
+    const newAngle = randomAngle();
+    ball.x = canvas.width / 2;
+    ball.y = canvas.height - 50;
+    ball.speedX = newAngle.x;
+    ball.speedY = newAngle.y;
 
-        setTimeout(() => {
-          zaText.style.animation = "none";
-          void zaText.offsetWidth;
-          zaText.style.animation = "zaEcho 1.5s ease-out";
-        }, 670);
+    rewinding = false;
+    bitesActive = false;
+    ballHistory = [];
+  }, 8000);
+}
 
-      }, 100);
+function randomAngle() {
+  const angle = (Math.random() * Math.PI / 2) + Math.PI / 4;
+  const speed = 4;
+  return {
+    x: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -1),
+    y: -Math.abs(Math.sin(angle) * speed)
+  };
+}
 
-      setTimeout(() => timeResumeSound.play(), 5700);
+const paddle = {
+  width: 120,
+  height: 15,
+  x: canvas.width / 2 - 60,
+  y: canvas.height - 30,
+  speed: 8,
+  dx: 0
+};
 
-      setTimeout(() => {
-        timeStopped = false;
-        ball.speedX = savedBallSpeedX;
-        ball.speedY = savedBallSpeedY;
-        document.body.classList.remove("za-warudo");
-      }, 8000);
-    }
+const start = randomAngle();
 
-    // 💥 BITES THE DUST
-    function activateBites() {
-      if (bitesActive || timeStopped) return;
+const ball = {
+  x: canvas.width / 2,
+  y: canvas.height - 50,
+  radius: 10,
+  speedX: start.x,
+  speedY: start.y
+};
 
-      bitesActive = true;
+const brickInfo = {
+  rows: 4,
+  cols: 8,
+  width: 85,
+  height: 25,
+  padding: 10,
+  offsetTop: 50,
+  offsetLeft: 20
+};
 
-      savedBallSpeedX = ball.speedX;
-      savedBallSpeedY = ball.speedY;
+let score = 0;
+let lives = 3;
+let gameOver = false;
 
-      ball.speedX = 0;
-      ball.speedY = 0;
+const bricks = [];
 
-      bitesSound.currentTime = 0;
-      bitesSound.play().catch(()=>{});
+for (let r = 0; r < brickInfo.rows; r++) {
+  bricks[r] = [];
+  for (let c = 0; c < brickInfo.cols; c++) {
+    bricks[r][c] = { x: 0, y: 0, visible: true };
+  }
+}
 
-      document.body.classList.add("bites-effect");
+function drawPaddle() {
+  ctx.fillStyle = "white";
+  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+}
 
-      setTimeout(() => {
-        document.body.classList.remove("bites-effect");
+let trail = [];
 
-        // RESET BALL (NO LIFE LOSS)
-        const newAngle = randomAngle();
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height - 50;
-        ball.speedX = newAngle.x;
-        ball.speedY = newAngle.y;
+function drawBall() {
+  trail.push({ x: ball.x, y: ball.y });
+  if (trail.length > 6) trail.shift();
 
-        bitesActive = false;
-      }, 8000);
-    }
+  for (let i = 0; i < trail.length; i++) {
+    ctx.beginPath();
+    ctx.arc(trail[i].x, trail[i].y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,165,0,${i / trail.length})`;
+    ctx.fill();
+  }
 
-    const paddle = {
-      width: 120,
-      height: 15,
-      x: canvas.width / 2 - 60,
-      y: canvas.height - 30,
-      speed: 8,
-      dx: 0
-    };
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = "orange";
+  ctx.fill();
+}
 
-    function randomAngle() {
-      const angle = (Math.random() * Math.PI / 2) + Math.PI / 4;
-      const speed = 4;
-      return {
-        x: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -1),
-        y: -Math.abs(Math.sin(angle) * speed)
-      };
-    }
-
-    const start = randomAngle();
-
-    const ball = {
-      x: canvas.width / 2,
-      y: canvas.height - 50,
-      radius: 10,
-      speedX: start.x,
-      speedY: start.y
-    };
-
-    const brickInfo = {
-      rows: 4,
-      cols: 8,
-      width: 85,
-      height: 25,
-      padding: 10,
-      offsetTop: 50,
-      offsetLeft: 20
-    };
-
-    let score = 0;
-    let lives = 3;
-    let gameOver = false;
-
-    const bricks = [];
-
-    for (let r = 0; r < brickInfo.rows; r++) {
-      bricks[r] = [];
-      for (let c = 0; c < brickInfo.cols; c++) {
-        bricks[r][c] = { x: 0, y: 0, visible: true };
-      }
-    }
-
-    function resetBricks() {
-      for (let r = 0; r < brickInfo.rows; r++) {
-        for (let c = 0; c < brickInfo.cols; c++) {
-          bricks[r][c].visible = true;
-        }
-      }
-    }
-
-    function drawPaddle() {
-      ctx.fillStyle = "white";
-      ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
-    }
-
-    let trail = [];
-
-    function drawBall() {
-      trail.push({ x: ball.x, y: ball.y });
-      if (trail.length > 6) trail.shift();
-
-      for (let i = 0; i < trail.length; i++) {
-        ctx.beginPath();
-        ctx.arc(trail[i].x, trail[i].y, ball.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,165,0,${i / trail.length})`;
-        ctx.fill();
-      }
-
+// 🔴 draw highlighted rewind points
+function drawHighlights() {
+  ctx.fillStyle = "red";
+  highlightPoints.forEach(i => {
+    const p = ballHistory[i];
+    if (p) {
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-      ctx.fillStyle = "orange";
+      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
+  });
+}
 
-    function drawBricks() {
-      for (let r = 0; r < brickInfo.rows; r++) {
-        for (let c = 0; c < brickInfo.cols; c++) {
-          const brick = bricks[r][c];
-          if (brick.visible) {
-            const brickX = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
-            const brickY = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
+function drawBricks() {
+  for (let r = 0; r < brickInfo.rows; r++) {
+    for (let c = 0; c < brickInfo.cols; c++) {
+      const brick = bricks[r][c];
+      if (brick.visible) {
+        const brickX = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
+        const brickY = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
 
-            brick.x = brickX;
-            brick.y = brickY;
+        brick.x = brickX;
+        brick.y = brickY;
 
-            ctx.fillStyle = "deepskyblue";
-            ctx.fillRect(brickX, brickY, brickInfo.width, brickInfo.height);
-          }
-        }
+        ctx.fillStyle = "deepskyblue";
+        ctx.fillRect(brickX, brickY, brickInfo.width, brickInfo.height);
       }
     }
+  }
+}
 
-    function drawScore() {
-      ctx.fillStyle = "white";
-      ctx.fillText("Score: " + score, 20, 30);
+function drawScore() {
+  ctx.fillStyle = "white";
+  ctx.fillText("Score: " + score, 20, 30);
+}
+
+function drawLives() {
+  ctx.fillStyle = "white";
+  ctx.fillText("Lives: " + lives, canvas.width - 100, 30);
+}
+
+function drawMessage() {
+  ctx.textAlign = "center";
+  ctx.font = "40px Arial";
+  ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+}
+
+function movePaddle() {
+  paddle.x += paddle.dx;
+  paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
+}
+
+function rewindBall() {
+  if (!rewinding) return;
+
+  // easing (slow → fast → slow)
+  const t = rewindIndex / ballHistory.length;
+  const speedFactor = 0.5 + Math.sin(t * Math.PI) * 2;
+
+  rewindProgress += speedFactor;
+
+  if (rewindIndex >= 1) {
+    const current = ballHistory[Math.floor(rewindIndex)];
+    const next = ballHistory[Math.floor(rewindIndex - 1)];
+
+    if (current && next) {
+      ball.x = current.x + (next.x - current.x) * 0.2;
+      ball.y = current.y + (next.y - current.y) * 0.2;
     }
 
-    function drawLives() {
-      ctx.fillStyle = "white";
-      ctx.fillText("Lives: " + lives, canvas.width - 100, 30);
+    // remove highlights when reached
+    highlightPoints = highlightPoints.filter(i => i < rewindIndex);
+
+    rewindIndex -= speedFactor * 0.1;
+  }
+}
+
+function moveBall() {
+  if (timeStopped || bitesActive) return;
+
+  // store history
+  ballHistory.push({ x: ball.x, y: ball.y });
+  if (ballHistory.length > 300) ballHistory.shift();
+
+  ball.x += ball.speedX;
+  ball.y += ball.speedY;
+
+  ball.speedX *= 1.0005;
+  ball.speedY *= 1.0005;
+
+  if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0)
+    ball.speedX *= -1;
+
+  if (ball.y - ball.radius < 0)
+    ball.speedY *= -1;
+
+  if (
+    ball.y + ball.radius > paddle.y &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.width
+  ) {
+    ball.speedY *= -1;
+  }
+
+  if (ball.y + ball.radius > canvas.height) {
+    lives--;
+
+    if (lives <= 0) {
+      gameOver = true;
+    } else {
+      const newAngle = randomAngle();
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 50;
+      ball.speedX = newAngle.x;
+      ball.speedY = newAngle.y;
     }
+  }
+}
 
-    function drawMessage() {
-      ctx.textAlign = "center";
-      ctx.font = "40px Arial";
-      ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-    }
+function brickCollision() {
+  if (timeStopped || bitesActive) return;
 
-    function movePaddle() {
-      paddle.x += paddle.dx;
-      paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
-    }
+  for (let r = 0; r < brickInfo.rows; r++) {
+    for (let c = 0; c < brickInfo.cols; c++) {
+      const brick = bricks[r][c];
 
-    function moveBall() {
-      if (timeStopped || bitesActive) return;
+      if (brick.visible &&
+          ball.x > brick.x &&
+          ball.x < brick.x + brickInfo.width &&
+          ball.y > brick.y &&
+          ball.y < brick.y + brickInfo.height) {
 
-      ball.x += ball.speedX;
-      ball.y += ball.speedY;
-
-      ball.speedX *= 1.0005;
-      ball.speedY *= 1.0005;
-
-      if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0)
-        ball.speedX *= -1;
-
-      if (ball.y - ball.radius < 0)
         ball.speedY *= -1;
-
-      if (
-        ball.y + ball.radius > paddle.y &&
-        ball.x > paddle.x &&
-        ball.x < paddle.x + paddle.width
-      ) {
-        ball.speedY *= -1;
-
-        if (bricksCleared) {
-          resetBricks();
-          bricksCleared = false;
-        }
-      }
-
-      if (ball.y + ball.radius > canvas.height) {
-        lives--;
-
-        if (lives <= 0) {
-          gameOver = true;
-        } else {
-          const newAngle = randomAngle();
-          ball.x = canvas.width / 2;
-          ball.y = canvas.height - 50;
-          ball.speedX = newAngle.x;
-          ball.speedY = newAngle.y;
-        }
+        brick.visible = false;
+        score++;
       }
     }
+  }
+}
 
-    function brickCollision() {
-      if (timeStopped || bitesActive) return;
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") paddle.dx = paddle.speed;
+  if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
+  if (e.key.toLowerCase() === "x") activateBites();
+});
 
-      for (let r = 0; r < brickInfo.rows; r++) {
-        for (let c = 0; c < brickInfo.cols; c++) {
-          const brick = bricks[r][c];
+document.addEventListener("keyup", e => {
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
+});
 
-          if (brick.visible &&
-              ball.x > brick.x &&
-              ball.x < brick.x + brickInfo.width &&
-              ball.y > brick.y &&
-              ball.y < brick.y + brickInfo.height) {
+function draw() {
+  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ball.speedY *= -1;
-            brick.visible = false;
-            score++;
+  drawPaddle();
+  drawBall();
+  drawBricks();
+  drawScore();
+  drawLives();
 
-            if (score % (brickInfo.rows * brickInfo.cols) === 0) {
-              bricksCleared = true;
-            }
-          }
-        }
-      }
-    }
+  if (rewinding) {
+    drawHighlights();
+    rewindBall();
+  } else if (!gameOver) {
+    movePaddle();
+    moveBall();
+    brickCollision();
+  } else {
+    drawMessage();
+  }
 
-    document.addEventListener("keydown", e => {
-      if (e.key === "ArrowRight") paddle.dx = paddle.speed;
-      if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
-      if (e.key.toLowerCase() === "z") activateZaWarudo();
-      if (e.key.toLowerCase() === "x") activateBites();
-    });
+  requestAnimationFrame(draw);
+}
 
-    document.addEventListener("keyup", e => {
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") paddle.dx = 0;
-    });
-
-    function draw() {
-      ctx.fillStyle = "rgba(0,0,0,0.25)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      drawPaddle();
-      drawBall();
-      drawBricks();
-      drawScore();
-      drawLives();
-
-      if (!gameOver) {
-        movePaddle();
-        moveBall();
-        brickCollision();
-        requestAnimationFrame(draw);
-      } else {
-        drawMessage();
-      }
-    }
-
-    draw();
-  </script>
+draw();
+</script>
 </body>
 </html>
