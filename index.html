@@ -37,7 +37,6 @@
       filter: grayscale(1) contrast(1.4) brightness(0.7);
     }
 
-    /* ZA WARUDO TEXT */
     #zaText {
       position: fixed;
       top: 40%;
@@ -61,17 +60,6 @@
       60% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
       100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
     }
-
-    /* 💥 BITES THE DUST EFFECT */
-    .bites-effect {
-      animation: bitesPulse 0.4s infinite;
-    }
-
-    @keyframes bitesPulse {
-      0% { filter: hue-rotate(0deg) brightness(1); }
-      50% { filter: hue-rotate(260deg) brightness(1.4); }
-      100% { filter: hue-rotate(0deg) brightness(1); }
-    }
   </style>
 </head>
 
@@ -82,13 +70,12 @@
   <div id="zaText">ZA WARUDO</div>
 
   <div class="instructions">
-    Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
+    Arrow keys to move • Press Z = ZA WARUDO
   </div>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
-  <audio id="bitesSound" src="bites.mp3"></audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -97,20 +84,16 @@
     const zaWarudoSound = document.getElementById("zaWarudoSound");
     const tomattaSound = document.getElementById("tomattaSound");
     const timeResumeSound = document.getElementById("timeResumeSound");
-    const bitesSound = document.getElementById("bitesSound");
 
     const zaText = document.getElementById("zaText");
 
     let timeStopped = false;
-    let bitesActive = false;
 
     let savedBallSpeedX = 0;
     let savedBallSpeedY = 0;
 
-    let bricksCleared = false;
-
     function activateZaWarudo() {
-      if (timeStopped || bitesActive) return;
+      if (timeStopped) return;
 
       timeStopped = true;
       document.body.classList.add("za-warudo");
@@ -154,37 +137,6 @@
         ball.speedX = savedBallSpeedX;
         ball.speedY = savedBallSpeedY;
         document.body.classList.remove("za-warudo");
-      }, 8000);
-    }
-
-    // 💥 BITES THE DUST
-    function activateBites() {
-      if (bitesActive || timeStopped) return;
-
-      bitesActive = true;
-
-      savedBallSpeedX = ball.speedX;
-      savedBallSpeedY = ball.speedY;
-
-      ball.speedX = 0;
-      ball.speedY = 0;
-
-      bitesSound.currentTime = 0;
-      bitesSound.play().catch(()=>{});
-
-      document.body.classList.add("bites-effect");
-
-      setTimeout(() => {
-        document.body.classList.remove("bites-effect");
-
-        // RESET BALL (NO LIFE LOSS)
-        const newAngle = randomAngle();
-        ball.x = canvas.width / 2;
-        ball.y = canvas.height - 50;
-        ball.speedX = newAngle.x;
-        ball.speedY = newAngle.y;
-
-        bitesActive = false;
       }, 8000);
     }
 
@@ -311,7 +263,7 @@
     }
 
     function moveBall() {
-      if (timeStopped || bitesActive) return;
+      if (timeStopped) return;
 
       ball.x += ball.speedX;
       ball.y += ball.speedY;
@@ -331,11 +283,6 @@
         ball.x < paddle.x + paddle.width
       ) {
         ball.speedY *= -1;
-
-        if (bricksCleared) {
-          resetBricks();
-          bricksCleared = false;
-        }
       }
 
       if (ball.y + ball.radius > canvas.height) {
@@ -354,7 +301,7 @@
     }
 
     function brickCollision() {
-      if (timeStopped || bitesActive) return;
+      if (timeStopped) return;
 
       for (let r = 0; r < brickInfo.rows; r++) {
         for (let c = 0; c < brickInfo.cols; c++) {
@@ -369,10 +316,6 @@
             ball.speedY *= -1;
             brick.visible = false;
             score++;
-
-            if (score % (brickInfo.rows * brickInfo.cols) === 0) {
-              bricksCleared = true;
-            }
           }
         }
       }
@@ -382,7 +325,6 @@
       if (e.key === "ArrowRight") paddle.dx = paddle.speed;
       if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
       if (e.key.toLowerCase() === "z") activateZaWarudo();
-      if (e.key.toLowerCase() === "x") activateBites();
     });
 
     document.addEventListener("keyup", e => {
