@@ -90,7 +90,6 @@
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
   <audio id="bitesSound" src="bites.mp3"></audio>
-
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
@@ -102,12 +101,15 @@ const bitesSound = document.getElementById("bitesSound");
 
 const zaText = document.getElementById("zaText");
 
+// =====================
+// STATE
+// =====================
 let timeStopped = false;
 let bitesActive = false;
 let rewinding = false;
 
 // =====================
-// HISTORY SYSTEM (BITES)
+// HISTORY (BTD)
 // =====================
 let ballHistory = [];
 const MAX_HISTORY = 500;
@@ -116,11 +118,25 @@ let rewindDuration = 8000;
 let rewindStartTime = 0;
 let highlightPoints = [];
 
-// easing
+// =====================
+// EASING
+// =====================
 function easeInOutCubic(t) {
   return t < 0.5
     ? 4 * t * t * t
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// =====================
+// RANDOM ANGLE
+// =====================
+function randomAngle() {
+  const angle = (Math.random() * Math.PI / 2) + Math.PI / 4;
+  const speed = 4;
+  return {
+    x: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -1),
+    y: -Math.abs(Math.sin(angle) * speed)
+  };
 }
 
 // =====================
@@ -135,23 +151,23 @@ function activateZaWarudo() {
   const savedX = ball.speedX;
   const savedY = ball.speedY;
 
-  const startSpeedX = ball.speedX;
-  const startSpeedY = ball.speedY;
+  const startX = ball.speedX;
+  const startY = ball.speedY;
   const start = performance.now();
 
-  function slowDownStep(now) {
+  function slow(now) {
     const t = Math.min((now - start) / 500, 1);
-    ball.speedX = startSpeedX * (1 - t);
-    ball.speedY = startSpeedY * (1 - t);
+    ball.speedX = startX * (1 - t);
+    ball.speedY = startY * (1 - t);
 
-    if (t < 1) requestAnimationFrame(slowDownStep);
+    if (t < 1) requestAnimationFrame(slow);
     else {
       ball.speedX = 0;
       ball.speedY = 0;
     }
   }
 
-  requestAnimationFrame(slowDownStep);
+  requestAnimationFrame(slow);
 
   setTimeout(() => {
     (Math.random() < 0.5 ? zaWarudoSound : tomattaSound).play();
@@ -160,7 +176,7 @@ function activateZaWarudo() {
       zaText.style.animation = "none";
       void zaText.offsetWidth;
       zaText.style.animation = "zaEcho 1.5s ease-out";
-    }, 670);
+    }, 600);
   }, 100);
 
   setTimeout(() => timeResumeSound.play(), 5700);
@@ -174,7 +190,7 @@ function activateZaWarudo() {
 }
 
 // =====================
-// BITES THE DUST (YOUR VERSION RESTORED)
+// BITES THE DUST (FULL SYSTEM)
 // =====================
 function activateBites() {
   if (bitesActive || timeStopped) return;
@@ -188,7 +204,7 @@ function activateBites() {
   document.body.classList.add("bites-effect");
 
   highlightPoints = [];
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 10; i++) {
     if (ballHistory.length > 0) {
       highlightPoints.push(Math.floor(Math.random() * ballHistory.length));
     }
@@ -225,17 +241,8 @@ const paddle = {
 };
 
 // =====================
-// BALL (NO TRAIL VISUALS)
+// BALL (NORMAL VISUALS)
 // =====================
-function randomAngle() {
-  const angle = (Math.random() * Math.PI / 2) + Math.PI / 4;
-  const speed = 4;
-  return {
-    x: Math.cos(angle) * speed * (Math.random() < 0.5 ? 1 : -1),
-    y: -Math.abs(Math.sin(angle) * speed)
-  };
-}
-
 const start = randomAngle();
 
 const ball = {
@@ -247,7 +254,7 @@ const ball = {
 };
 
 // =====================
-// BRICKS (RESTORED)
+// BRICKS (RESTORED + FIXED COLLISION)
 // =====================
 const brickInfo = {
   rows: 4,
@@ -275,14 +282,14 @@ for (let r = 0; r < brickInfo.rows; r++) {
 function drawBricks() {
   for (let r = 0; r < brickInfo.rows; r++) {
     for (let c = 0; c < brickInfo.cols; c++) {
-      const brick = bricks[r][c];
+      const b = bricks[r][c];
 
-      if (brick.visible) {
+      if (b.visible) {
         const bx = c * (brickInfo.width + brickInfo.padding) + brickInfo.offsetLeft;
         const by = r * (brickInfo.height + brickInfo.padding) + brickInfo.offsetTop;
 
-        brick.x = bx;
-        brick.y = by;
+        b.x = bx;
+        b.y = by;
 
         ctx.fillStyle = "deepskyblue";
         ctx.fillRect(bx, by, brickInfo.width, brickInfo.height);
@@ -292,29 +299,34 @@ function drawBricks() {
 }
 
 function brickCollision() {
-  if (timeStopped) return;
+  if (timeStopped || bitesActive) return;
 
   for (let r = 0; r < brickInfo.rows; r++) {
     for (let c = 0; c < brickInfo.cols; c++) {
-      const brick = bricks[r][c];
+      const b = bricks[r][c];
+      if (!b.visible) continue;
 
-      if (
-        brick.visible &&
-        ball.x > brick.x &&
-        ball.x < brick.x + brickInfo.width &&
-        ball.y > brick.y &&
-        ball.y < brick.y + brickInfo.height
-      ) {
-        ball.speedY *= -1;
-        brick.visible = false;
+      const closestX = Math.max(b.x, Math.min(ball.x, b.x + brickInfo.width));
+      const closestY = Math.max(b.y, Math.min(ball.y, b.y + brickInfo.height));
+
+      const dx = ball.x - closestX;
+      const dy = ball.y - closestY;
+
+      if (dx * dx + dy * dy < ball.radius * ball.radius) {
+        b.visible = false;
         score++;
+
+        if (Math.abs(dx) > Math.abs(dy)) ball.speedX *= -1;
+        else ball.speedY *= -1;
+
+        return;
       }
     }
   }
 }
 
 // =====================
-// DRAW BALL (SIMPLE ORIGINAL STYLE)
+// DRAW BALL (NORMAL ONLY)
 // =====================
 function drawBall() {
   ctx.beginPath();
@@ -324,21 +336,31 @@ function drawBall() {
 }
 
 // =====================
-// OTHER DRAW FUNCTIONS
+// TRAIL + MEMORY DOTS (BTD ONLY)
 // =====================
-function drawPaddle() {
-  ctx.fillStyle = "white";
-  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+function drawTrail() {
+  for (let i = 0; i < ballHistory.length; i++) {
+    const p = ballHistory[i];
+    const a = i / ballHistory.length;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,165,0,${a * 0.25})`;
+    ctx.fill();
+  }
 }
 
-function drawScore() {
-  ctx.fillStyle = "white";
-  ctx.fillText("Score: " + score, 20, 30);
-}
+function drawHighlights() {
+  ctx.fillStyle = "red";
 
-function drawLives() {
-  ctx.fillStyle = "white";
-  ctx.fillText("Lives: " + lives, canvas.width - 100, 30);
+  for (let i of highlightPoints) {
+    const p = ballHistory[i];
+    if (!p) continue;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, ball.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 // =====================
@@ -374,25 +396,23 @@ function moveBall() {
 
   if (ball.y + ball.radius > canvas.height) {
     lives--;
-
-    if (lives <= 0) {
-      gameOver = true;
-    } else {
-      const newAngle = randomAngle();
+    if (lives <= 0) gameOver = true;
+    else {
+      const n = randomAngle();
       ball.x = canvas.width / 2;
       ball.y = canvas.height - 50;
-      ball.speedX = newAngle.x;
-      ball.speedY = newAngle.y;
+      ball.speedX = n.x;
+      ball.speedY = n.y;
     }
   }
 
-  // SAVE HISTORY FOR BITES
+  // SAVE HISTORY
   ballHistory.push({ x: ball.x, y: ball.y });
   if (ballHistory.length > MAX_HISTORY) ballHistory.shift();
 }
 
 // =====================
-// BITES REWIND
+// REWIND SYSTEM
 // =====================
 function rewindBall() {
   if (!rewinding) return;
@@ -402,15 +422,15 @@ function rewindBall() {
   const eased = easeInOutCubic(t);
   const reverseT = 1 - eased;
 
-  const indexFloat = reverseT * (ballHistory.length - 1);
-  const i = Math.floor(indexFloat);
+  const idx = reverseT * (ballHistory.length - 1);
+  const i = Math.floor(idx);
   const next = Math.min(i + 1, ballHistory.length - 1);
 
   const p1 = ballHistory[i];
   const p2 = ballHistory[next];
 
   if (p1 && p2) {
-    const lerp = indexFloat - i;
+    const lerp = idx - i;
     ball.x = p1.x + (p2.x - p1.x) * lerp;
     ball.y = p1.y + (p2.y - p1.y) * lerp;
   }
@@ -442,11 +462,13 @@ function draw() {
   drawPaddle();
 
   if (rewinding) {
+    drawHighlights();
     rewindBall();
     drawBall();
   } else {
     movePaddle();
     moveBall();
+    drawTrail();
     drawBall();
   }
 
@@ -454,13 +476,10 @@ function draw() {
   drawScore();
   drawLives();
 
-  if (!gameOver) {
-    requestAnimationFrame(draw);
-  }
+  if (!gameOver) requestAnimationFrame(draw);
 }
 
 draw();
 </script>
-
 </body>
 </html>
