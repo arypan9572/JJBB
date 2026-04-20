@@ -300,18 +300,26 @@ function brickCollision() {
 
       if (!brick.visible) continue;
 
-      // EXACT same logic style as your working version
       if (
         ball.x > brick.x &&
         ball.x < brick.x + brickInfo.width &&
         ball.y + ball.radius > brick.y &&
         ball.y - ball.radius < brick.y + brickInfo.height
       ) {
-        ball.speedY *= -1;
         brick.visible = false;
         score++;
 
-        return; // prevents multi-hit per frame (IMPORTANT)
+        // 🔥 bounce
+        ball.speedY *= -1;
+
+        // 🔥 IMPORTANT: push ball out so it doesn't re-pass through
+        if (ball.speedY > 0) {
+          ball.y = brick.y + brickInfo.height + ball.radius;
+        } else {
+          ball.y = brick.y - ball.radius;
+        }
+
+        return;
       }
     }
   }
@@ -445,14 +453,15 @@ function draw() {
 
   drawPaddle();
 
-  if (rewinding) {
-    rewindBall();
-    drawBall();
-  } else {
-    movePaddle();
-    moveBall();
-    drawBall();
-  }
+if (rewinding) {
+  rewindBall();
+  drawBall();
+} else {
+  movePaddle();
+  moveBall();
+  brickCollision(); // 🔥 THIS WAS MISSING
+  drawBall();
+}
 
   drawBricks();
   drawScore();
