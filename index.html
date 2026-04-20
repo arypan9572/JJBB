@@ -294,51 +294,24 @@ function drawBricks() {
 function brickCollision() {
   if (timeStopped || bitesActive) return;
 
-  // 🔥 prevents tunneling: we check movement path between frames
-  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(ball.speedX), Math.abs(ball.speedY))));
+  for (let r = 0; r < brickInfo.rows; r++) {
+    for (let c = 0; c < brickInfo.cols; c++) {
+      const brick = bricks[r][c];
 
-  for (let step = 0; step <= steps; step++) {
-    const t = step / steps;
+      if (!brick.visible) continue;
 
-    const testX = ball.x - ball.speedX + ball.speedX * t;
-    const testY = ball.y - ball.speedY + ball.speedY * t;
+      // EXACT same logic style as your working version
+      if (
+        ball.x > brick.x &&
+        ball.x < brick.x + brickInfo.width &&
+        ball.y + ball.radius > brick.y &&
+        ball.y - ball.radius < brick.y + brickInfo.height
+      ) {
+        ball.speedY *= -1;
+        brick.visible = false;
+        score++;
 
-    for (let r = 0; r < brickInfo.rows; r++) {
-      for (let c = 0; c < brickInfo.cols; c++) {
-        const brick = bricks[r][c];
-
-        if (!brick.visible) continue;
-
-        if (
-          testX + ball.radius > brick.x &&
-          testX - ball.radius < brick.x + brickInfo.width &&
-          testY + ball.radius > brick.y &&
-          testY - ball.radius < brick.y + brickInfo.height
-        ) {
-          brick.visible = false;
-          score++;
-
-          // 🔥 correct bounce direction
-          const overlapX =
-            Math.min(
-              (testX + ball.radius) - brick.x,
-              (brick.x + brickInfo.width) - (testX - ball.radius)
-            );
-
-          const overlapY =
-            Math.min(
-              (testY + ball.radius) - brick.y,
-              (brick.y + brickInfo.height) - (testY - ball.radius)
-            );
-
-          if (overlapX < overlapY) {
-            ball.speedX *= -1;
-          } else {
-            ball.speedY *= -1;
-          }
-
-          return; // only one brick per frame
-        }
+        return; // prevents multi-hit per frame (IMPORTANT)
       }
     }
   }
