@@ -294,35 +294,51 @@ function drawBricks() {
 function brickCollision() {
   if (timeStopped || bitesActive) return;
 
-  for (let r = 0; r < brickInfo.rows; r++) {
-    for (let c = 0; c < brickInfo.cols; c++) {
-      const brick = bricks[r][c];
+  // 🔥 prevents tunneling: we check movement path between frames
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(ball.speedX), Math.abs(ball.speedY))));
 
-      if (!brick.visible) continue;
+  for (let step = 0; step <= steps; step++) {
+    const t = step / steps;
 
-      if (
-        ball.x + ball.radius > brick.x &&
-        ball.x - ball.radius < brick.x + brickInfo.width &&
-        ball.y + ball.radius > brick.y &&
-        ball.y - ball.radius < brick.y + brickInfo.height
-      ) {
-        brick.visible = false;
-        score++;
+    const testX = ball.x - ball.speedX + ball.speedX * t;
+    const testY = ball.y - ball.speedY + ball.speedY * t;
 
-        // better bounce handling (prevents glitchy tunneling)
-        const prevX = ball.x - ball.speedX;
-        const prevY = ball.y - ball.speedY;
+    for (let r = 0; r < brickInfo.rows; r++) {
+      for (let c = 0; c < brickInfo.cols; c++) {
+        const brick = bricks[r][c];
 
-        const hitFromLeft = prevX + ball.radius <= brick.x;
-        const hitFromRight = prevX - ball.radius >= brick.x + brickInfo.width;
+        if (!brick.visible) continue;
 
-        if (hitFromLeft || hitFromRight) {
-          ball.speedX *= -1;
-        } else {
-          ball.speedY *= -1;
+        if (
+          testX + ball.radius > brick.x &&
+          testX - ball.radius < brick.x + brickInfo.width &&
+          testY + ball.radius > brick.y &&
+          testY - ball.radius < brick.y + brickInfo.height
+        ) {
+          brick.visible = false;
+          score++;
+
+          // 🔥 correct bounce direction
+          const overlapX =
+            Math.min(
+              (testX + ball.radius) - brick.x,
+              (brick.x + brickInfo.width) - (testX - ball.radius)
+            );
+
+          const overlapY =
+            Math.min(
+              (testY + ball.radius) - brick.y,
+              (brick.y + brickInfo.height) - (testY - ball.radius)
+            );
+
+          if (overlapX < overlapY) {
+            ball.speedX *= -1;
+          } else {
+            ball.speedY *= -1;
+          }
+
+          return; // only one brick per frame
         }
-
-        return; // prevents double-hit per frame
       }
     }
   }
