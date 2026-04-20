@@ -198,8 +198,7 @@ function activateBites() {
 rewindStartTime = performance.now();
 
 // 🔥 lock how far back we go (last 2 seconds of gameplay)
-const framesToRewind = 120; // ~2 seconds at 60fps
-rewindStartIndex = Math.max(0, ballHistory.length - framesToRewind);
+rewindStartIndex = 0; // go all the way back to spawn
   setTimeout(() => {
     document.body.classList.remove("bites-effect");
 
