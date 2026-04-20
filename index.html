@@ -105,6 +105,7 @@ const zaText = document.getElementById("zaText");
 let timeStopped = false;
 let bitesActive = false;
 let rewinding = false;
+let rewindStartIndex = 0;.
 
 // =====================
 // HISTORY SYSTEM (BITES)
@@ -194,8 +195,11 @@ function activateBites() {
     }
   }
 
-  rewindStartTime = performance.now();
+rewindStartTime = performance.now();
 
+// 🔥 lock how far back we go (last 2 seconds of gameplay)
+const framesToRewind = 120; // ~2 seconds at 60fps
+rewindStartIndex = Math.max(0, ballHistory.length - framesToRewind);
   setTimeout(() => {
     document.body.classList.remove("bites-effect");
 
@@ -414,7 +418,8 @@ function rewindBall() {
   const eased = easeInOutCubic(t);
   const reverseT = 1 - eased;
 
-  const indexFloat = reverseT * (ballHistory.length - 1);
+  const range = ballHistory.length - rewindStartIndex - 1; 
+  const indexFloat = rewindStartIndex + reverseT * range;
   const i = Math.floor(indexFloat);
   const next = Math.min(i + 1, ballHistory.length - 1);
 
