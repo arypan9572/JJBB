@@ -262,10 +262,10 @@ let rewindStartTime = 0;
 let highlightPoints = [];
 
 // easing
-function easeInOutCubic(t) {
+function easeInOutQuint(t) {
   return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    ? 16 * t * t * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 5) / 2;
 }
 
 function playFlagTransition(callback) {
@@ -277,39 +277,54 @@ function playFlagTransition(callback) {
   chosen.play().catch(()=>{});
 
   const start = performance.now();
-  const duration = 1800; // total animation time
+  const duration = 2000;
+
+  let gameRevealed = false;
 
   function animate(now) {
     let t = (now - start) / duration;
     if (t > 1) t = 1;
 
-    let eased = easeInOutCubic(t);
+    let x, scale, blur, opacity;
 
-    // split motion into 3 phases:
-    // 0 - 0.4 = ease in
-    // 0.4 - 0.6 = hold center
-    // 0.6 - 1 = ease out
+    const e = easeInOutQuint;
 
-    let x;
-
-    if (t < 0.4) {
-      // ease in from right
-      const localT = t / 0.4;
-      const e = easeInOutCubic(localT);
-      x = 100 - e * 100;
+    // 🟢 PHASES
+    if (t < 0.35) {
+      // ENTER (fast smooth ease-in)
+      const p = e(t / 0.35);
+      x = 100 - p * 100;
+      scale = 1 + (1 - p) * 0.15;
+      blur = (1 - p) * 6;
+      opacity = 1;
     } 
-    else if (t < 0.6) {
-      // hold center
+    else if (t < 0.7) {
+      // CENTER HOLD (GAME SHOULD APPEAR HERE)
       x = 0;
+      scale = 1;
+      blur = 0;
+      opacity = 1;
+
+      if (!gameRevealed) {
+        gameRevealed = true;
+
+        // 🎮 GAME APPEARS EARLY HERE
+        startScreen.style.display = "none";
+        gameStarted = true;
+      }
     } 
     else {
-      // ease out to left
-      const localT = (t - 0.6) / 0.4;
-      const e = easeInOutCubic(localT);
-      x = 0 - e * 120;
+      // EXIT (slow smooth fade + slide out)
+      const p = e((t - 0.7) / 0.3);
+      x = 0 - p * 140;
+      scale = 1 - p * 0.1;
+      blur = p * 10;
+      opacity = 1 - p;
     }
 
-    flag.style.transform = `translateX(${x}%)`;
+    flag.style.transform = `translateX(${x}%) scale(${scale})`;
+    flag.style.filter = `blur(${blur}px)`;
+    flag.style.opacity = opacity;
 
     if (t < 1) {
       requestAnimationFrame(animate);
