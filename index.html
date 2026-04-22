@@ -453,21 +453,37 @@ function moveBall() {
   if (ball.y - ball.radius < 0)
     ball.speedY *= -1;
 
-if (
-  ball.y + ball.radius > paddle.y &&
-  ball.x > paddle.x &&
-  ball.x < paddle.x + paddle.width
-) {
-  ball.speedY *= -1;
+  // paddle collision
+  if (
+    ball.y + ball.radius > paddle.y &&
+    ball.x > paddle.x &&
+    ball.x < paddle.x + paddle.width
+  ) {
+    ball.speedY *= -1;
 
-  // 🔥 ONLY reset bricks AFTER paddle hit
-  if (waitingForPaddleReset) {
-    resetBricks();
-    waitingForPaddleReset = false;
+    if (waitingForPaddleReset) {
+      resetBricks();
+      waitingForPaddleReset = false;
+    }
   }
-}
 
-  // ✅ check win condition here
+  // lives
+  if (ball.y + ball.radius > canvas.height) {
+    lives--;
+
+    if (lives <= 0) {
+      gameOver = true;
+      gameOverScreen.style.display = "flex";
+    } else {
+      const newAngle = randomAngle();
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 50;
+      ball.speedX = newAngle.x;
+      ball.speedY = newAngle.y;
+    }
+  }
+
+  // win check
   let allGone = true;
 
   for (let r = 0; r < brickInfo.rows; r++) {
@@ -480,8 +496,11 @@ if (
   }
 
   if (allGone) {
-    resetBricks();
+    waitingForPaddleReset = true;
   }
+
+  // history (Bites system)
+  ballHistory.push({ x: ball.x, y: ball.y });
 }
 
   if (ball.y + ball.radius > canvas.height) {
