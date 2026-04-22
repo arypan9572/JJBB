@@ -78,7 +78,7 @@
 
 <body>
   <h1>Breakout Starter Game</h1>
-  <canvas id="gameCanvas" width="800" height="650"></canvas>
+  <canvas id="gameCanvas" width="800" height="600"></canvas>
 
   <div id="zaText">ZA WARUDO</div>
 
@@ -128,7 +128,7 @@ function easeInOutCubic(t) {
 // ZA WARUDO
 // =====================
 function activateZaWarudo() {
-  if (timeStopped) return;
+  if (timeStopped || bitesActive) return;
 
   timeStopped = true;
   document.body.classList.add("za-warudo");
@@ -288,13 +288,18 @@ function drawBricks() {
 
         brick.x = bx;
         brick.y = by;
+ctx.globalAlpha = 0.75;
 
-        if (r === 0) ctx.fillStyle = "red";
+if (r === 0) ctx.fillStyle = "red";
 else if (r === 1) ctx.fillStyle = "orange";
 else if (r === 2) ctx.fillStyle = "yellow";
 else if (r === 3) ctx.fillStyle = "green";
 else ctx.fillStyle = "deepskyblue";
-        ctx.fillRect(bx, by, brickInfo.width, brickInfo.height);
+
+ctx.fillRect(bx, by, brickInfo.width, brickInfo.height);
+
+// reset alpha so it doesn't affect other drawings
+ctx.globalAlpha = 1.0;
       }
     }
   }
