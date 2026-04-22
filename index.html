@@ -73,6 +73,47 @@
       50% { filter: hue-rotate(260deg) brightness(1.4); }
       100% { filter: hue-rotate(0deg) brightness(1); }
     }
+    #gameOverScreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+}
+
+#gameOverText {
+  font-size: 60px;
+  color: red;
+  text-shadow: 0 0 20px red;
+  animation: popIn 0.6s ease-out;
+}
+
+#resetBtn {
+  margin-top: 20px;
+  padding: 12px 25px;
+  font-size: 20px;
+  border: none;
+  cursor: pointer;
+  border-radius: 10px;
+  background: white;
+  color: black;
+  transition: transform 0.2s;
+}
+
+#resetBtn:hover {
+  transform: scale(1.1);
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
   </style>
 </head>
 
@@ -85,6 +126,11 @@
   <div class="instructions">
     Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
   </div>
+
+  <div id="gameOverScreen">
+  <div id="gameOverText">GAME OVER</div>
+  <button id="resetBtn">RESET</button>
+</div>
 
   <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
@@ -101,6 +147,8 @@ const timeResumeSound = document.getElementById("timeResumeSound");
 const bitesSound = document.getElementById("bitesSound");
 
 const zaText = document.getElementById("zaText");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const resetBtn = document.getElementById("resetBtn");
 
 let timeStopped = false;
 let bitesActive = false;
@@ -265,6 +313,7 @@ const brickInfo = {
 };
 
 let score = 0;
+let waitingForPaddleReset = false;
 let lives = 3;
 let gameOver = false;
 
@@ -343,9 +392,9 @@ function brickCollision() {
           }
         }
 
-        if (allGone) {
-          resetBricks();
-        }
+       if (allGone) {
+  waitingForPaddleReset = true;
+}
 
         return;
       }
@@ -404,12 +453,19 @@ function moveBall() {
   if (ball.y - ball.radius < 0)
     ball.speedY *= -1;
 
- if (
+if (
   ball.y + ball.radius > paddle.y &&
   ball.x > paddle.x &&
   ball.x < paddle.x + paddle.width
 ) {
   ball.speedY *= -1;
+
+  // 🔥 ONLY reset bricks AFTER paddle hit
+  if (waitingForPaddleReset) {
+    resetBricks();
+    waitingForPaddleReset = false;
+  }
+}
 
   // ✅ check win condition here
   let allGone = true;
@@ -432,8 +488,9 @@ function moveBall() {
     lives--;
 
     if (lives <= 0) {
-      gameOver = true;
-    } else {
+  gameOver = true;
+  gameOverScreen.style.display = "flex";
+} else {
       const newAngle = randomAngle();
       ball.x = canvas.width / 2;
       ball.y = canvas.height - 50;
@@ -524,6 +581,9 @@ if (rewinding) {
 }
 
 draw();
+resetBtn.addEventListener("click", () => {
+  location.reload();
+});
 </script>
 
 </body>
