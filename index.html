@@ -501,7 +501,22 @@ function moveBall() {
 
   // history (Bites system)
   ballHistory.push({ x: ball.x, y: ball.y });
-}
+  // lives
+  if (ball.y + ball.radius > canvas.height) {
+    lives--;
+
+    if (lives <= 0) {
+      gameOver = true;
+      gameOverScreen.style.display = "flex";
+    } else {
+      const newAngle = randomAngle();
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 50;
+      ball.speedX = newAngle.x;
+      ball.speedY = newAngle.y;
+    }
+  }
+
   // win check
   let allGone = true;
 
@@ -518,7 +533,7 @@ function moveBall() {
     waitingForPaddleReset = true;
   }
 
-  // SAVE HISTORY FOR BITES
+  // history system
   ballHistory.push({ x: ball.x, y: ball.y });
 }
   
