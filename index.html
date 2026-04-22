@@ -78,7 +78,7 @@
 
 <body>
   <h1>Breakout Starter Game</h1>
-  <canvas id="gameCanvas" width="800" height="500"></canvas>
+  <canvas id="gameCanvas" width="800" height="650"></canvas>
 
   <div id="zaText">ZA WARUDO</div>
 
@@ -255,12 +255,12 @@ ballHistory.push({ x: ball.x, y: ball.y });
 // BRICKS (RESTORED)
 // =====================
 const brickInfo = {
-  rows: 4,
+  rows: 5,
   cols: 8,
   width: 85,
   height: 25,
   padding: 10,
-  offsetTop: 50,
+  offsetTop: 60,
   offsetLeft: 20
 };
 
@@ -289,7 +289,11 @@ function drawBricks() {
         brick.x = bx;
         brick.y = by;
 
-        ctx.fillStyle = "deepskyblue";
+        if (r === 0) ctx.fillStyle = "red";
+else if (r === 1) ctx.fillStyle = "orange";
+else if (r === 2) ctx.fillStyle = "yellow";
+else if (r === 3) ctx.fillStyle = "green";
+else ctx.fillStyle = "deepskyblue";
         ctx.fillRect(bx, by, brickInfo.width, brickInfo.height);
       }
     }
@@ -314,31 +318,31 @@ function brickCollision() {
         brick.visible = false;
         score++;
 
-        // 🔥 bounce
         ball.speedY *= -1;
 
-        // 🔥 IMPORTANT: push ball out so it doesn't re-pass through
         if (ball.speedY > 0) {
           ball.y = brick.y + brickInfo.height + ball.radius;
         } else {
           ball.y = brick.y - ball.radius;
         }
 
-        return;
-        // ✅ check if all bricks are gone
-let allGone = true;
-for (let r = 0; r < brickInfo.rows; r++) {
-  for (let c = 0; c < brickInfo.cols; c++) {
-    if (bricks[r][c].visible) {
-      allGone = false;
-      break;
-    }
-  }
-}
+        // ✅ CHECK IF ALL BRICKS ARE GONE
+        let allGone = true;
 
-if (allGone) {
-  resetBricks();
-}
+        for (let rr = 0; rr < brickInfo.rows; rr++) {
+          for (let cc = 0; cc < brickInfo.cols; cc++) {
+            if (bricks[rr][cc].visible) {
+              allGone = false;
+              break;
+            }
+          }
+        }
+
+        if (allGone) {
+          resetBricks();
+        }
+
+        return;
       }
     }
   }
@@ -350,7 +354,7 @@ if (allGone) {
 function drawBall() {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fillStyle = "orange";
+  ctx.fillStyle = "lime";
   ctx.fill();
 }
 
@@ -358,7 +362,7 @@ function drawBall() {
 // OTHER DRAW FUNCTIONS
 // =====================
 function drawPaddle() {
-  ctx.fillStyle = "white";
+  ctx.fillStyle = "deepskyblue";
   ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
 
@@ -395,13 +399,29 @@ function moveBall() {
   if (ball.y - ball.radius < 0)
     ball.speedY *= -1;
 
-  if (
-    ball.y + ball.radius > paddle.y &&
-    ball.x > paddle.x &&
-    ball.x < paddle.x + paddle.width
-  ) {
-    ball.speedY *= -1;
+ if (
+  ball.y + ball.radius > paddle.y &&
+  ball.x > paddle.x &&
+  ball.x < paddle.x + paddle.width
+) {
+  ball.speedY *= -1;
+
+  // ✅ check win condition here
+  let allGone = true;
+
+  for (let r = 0; r < brickInfo.rows; r++) {
+    for (let c = 0; c < brickInfo.cols; c++) {
+      if (bricks[r][c].visible) {
+        allGone = false;
+        break;
+      }
+    }
   }
+
+  if (allGone) {
+    resetBricks();
+  }
+}
 
   if (ball.y + ball.radius > canvas.height) {
     lives--;
