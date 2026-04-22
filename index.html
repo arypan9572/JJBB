@@ -22,6 +22,7 @@
 
     h1 { margin-bottom: 10px; }
 
+    
     canvas {
       background: black;
       border: 3px solid white;
@@ -114,9 +115,66 @@
   0% { transform: scale(0.3); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+#startScreen {
+  position: fixed;
+  inset: 0;
+  background: black;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+#startScreen h1 {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.panel {
+  border: 2px solid white;
+  padding: 15px;
+  margin: 10px;
+  width: 300px;
+  text-align: center;
+}
+
+#startBtn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.hint {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.7;
+}
   </style>
 </head>
+<div id="startScreen">
+  <h1>BREAKOUT</h1>
 
+  <div class="panel">
+    <h2>Controls</h2>
+    <p>← → Move paddle</p>
+    <p>Z = ZA WARUDO (slow time)</p>
+    <p>X = BITES THE DUST (erase mode)</p>
+  </div>
+
+  <div class="panel">
+    <h2>Power</h2>
+    <p>ZA WARUDO: freezes time</p>
+    <p>BITES THE DUST: rewinds time, all bricks in ball path disintegrate</p>
+  </div>
+
+  <button id="startBtn">START GAME</button>
+  <p class="hint">Press SPACE to start</p>
+</div>
+  
 <body>
   <h1>Breakout Starter Game</h1>
   <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -149,11 +207,16 @@ const bitesSound = document.getElementById("bitesSound");
 const zaText = document.getElementById("zaText");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const resetBtn = document.getElementById("resetBtn");
+  
+let gameStarted = false;
+const startScreen = document.getElementById("startScreen");
+const startBtn = document.getElementById("startBtn");
 
 let timeStopped = false;
 let bitesActive = false;
 let rewinding = false;
 let rewindStartIndex = 0;
+
 
 // =====================
 // HISTORY SYSTEM (BITES)
@@ -355,7 +418,7 @@ ctx.globalAlpha = 1.0;
 }
 
 function brickCollision() {
-  if (timeStopped || bitesActive) return;
+  if (timeStopped) return;
 
   for (let r = 0; r < brickInfo.rows; r++) {
     for (let c = 0; c < brickInfo.cols; c++) {
@@ -372,33 +435,33 @@ function brickCollision() {
         brick.visible = false;
         score++;
 
-        ball.speedY *= -1;
+        // 💥 BITES THE DUST MODE = NO BOUNCE
+        if (!bitesActive) {
+          ball.speedY *= -1;
 
-        if (ball.speedY > 0) {
-          ball.y = brick.y + brickInfo.height + ball.radius;
-        } else {
-          ball.y = brick.y - ball.radius;
-        }
-
-        // ✅ CHECK IF ALL BRICKS ARE GONE
-        let allGone = true;
-
-        for (let rr = 0; rr < brickInfo.rows; rr++) {
-          for (let cc = 0; cc < brickInfo.cols; cc++) {
-            if (bricks[rr][cc].visible) {
-              allGone = false;
-              break;
-            }
+          if (ball.speedY > 0) {
+            ball.y = brick.y + brickInfo.height + ball.radius;
+          } else {
+            ball.y = brick.y - ball.radius;
           }
         }
-
-       if (allGone) {
-  waitingForPaddleReset = true;
-}
-
-        return;
       }
     }
+  }
+
+  // check win condition
+  let allGone = true;
+  for (let r = 0; r < brickInfo.rows; r++) {
+    for (let c = 0; c < brickInfo.cols; c++) {
+      if (bricks[r][c].visible) {
+        allGone = false;
+        break;
+      }
+    }
+  }
+
+  if (allGone) {
+    waitingForPaddleReset = true;
   }
 }
 
@@ -554,6 +617,10 @@ function resetBricks() {
 // MAIN LOOP
 // =====================
 function draw() {
+  if (!gameStarted) {
+    requestAnimationFrame(draw);
+    return;
+  }
   ctx.fillStyle = "rgba(0,0,0,0.25)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -579,6 +646,10 @@ if (rewinding) {
 }
 
 draw();
+startBtn.addEventListener("click", () => {
+  startScreen.style.display = "none";
+  gameStarted = true;
+});
 resetBtn.addEventListener("click", () => {
   location.reload();
 });
