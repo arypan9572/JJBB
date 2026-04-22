@@ -159,10 +159,18 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  z-index: 20000;
-  display: none;
+  z-index: 5; /* lower than UI screens */
 }
 
+canvas {
+  position: relative;
+  z-index: 1;
+}
+
+#startScreen,
+#gameOverScreen {
+  z-index: 10;
+}
 #flag {
   position: absolute;
   top: 0;
@@ -306,12 +314,15 @@ function playFlagTransition(callback) {
       opacity = 1;
 
       if (!gameRevealed) {
-        gameRevealed = true;
+  gameRevealed = true;
 
-        // 🎮 GAME APPEARS EARLY HERE
-        startScreen.style.display = "none";
-        gameStarted = true;
-      }
+  // 🎮 start game immediately (BEHIND FLAG)
+  gameStarted = true;
+
+  // hide UI instantly so only canvas shows under flag
+  startScreen.style.display = "none";
+  gameOverScreen.style.display = "none";
+}
     } 
     else {
       // EXIT (slow smooth fade + slide out)
