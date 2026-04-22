@@ -131,6 +131,7 @@
   font-size: 60px;
   margin-bottom: 20px;
 }
+    
 
 .panel {
   border: 2px solid white;
@@ -152,6 +153,32 @@
   font-size: 12px;
   opacity: 0.7;
 }
+
+#flagOverlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 20000;
+  display: none;
+}
+
+#flag {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  height: 100%;
+  width: auto;
+}
+
+@keyframes flagSweep {
+  0% {
+    left: 100%;
+  }
+  100% {
+    left: -120%;
+  }
+}
   </style>
 </head>
 <div id="startScreen">
@@ -169,6 +196,9 @@
     <p>ZA WARUDO: freezes time</p>
     <p>BITES THE DUST: rewinds time, all bricks in ball path disintegrate</p>
   </div>
+
+  <div id="flagOverlay">
+    <img id="flag" src="https://preview.redd.it/petition-to-change-this-subs-picture-today-into-funny-v0-nmsci5a449831.png?auto=webp&s=506b92165d2864a072866ac1925e741cf6acc5ee" /></div>
 
   <button id="startBtn">START GAME</button>
   <p class="hint">Press SPACE to start</p>
@@ -193,6 +223,9 @@
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
   <audio id="bitesSound" src="bites.mp3"></audio>
+  <audio id="dojyan1" src="dojyan1.mp3"></audio>
+  <audio id="dojyan2" src="dojyan2.mp3"></audio>
+  <audio id="dojyan3" src="dojyan3.mp3"></audio>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -203,6 +236,13 @@ const tomattaSound = document.getElementById("tomattaSound");
 const timeResumeSound = document.getElementById("timeResumeSound");
 const bitesSound = document.getElementById("bitesSound");
 
+const flagOverlay = document.getElementById("flagOverlay");
+const flag = document.getElementById("flag");
+
+const dojyan1 = document.getElementById("dojyan1");
+const dojyan2 = document.getElementById("dojyan2");
+const dojyan3 = document.getElementById("dojyan3");
+  
 const zaText = document.getElementById("zaText");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const resetBtn = document.getElementById("resetBtn");
@@ -232,6 +272,26 @@ function easeInOutCubic(t) {
   return t < 0.5
     ? 4 * t * t * t
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function playFlagTransition(callback) {
+  flagOverlay.style.display = "block";
+
+  flag.style.animation = "none";
+  void flag.offsetWidth; // reset animation
+
+  flag.style.animation = "flagSweep 1.6s linear forwards";
+
+  const sounds = [dojyan1, dojyan2, dojyan3];
+  const chosen = sounds[Math.floor(Math.random() * sounds.length)];
+
+  chosen.currentTime = 0;
+  chosen.play().catch(()=>{});
+
+  setTimeout(() => {
+    flagOverlay.style.display = "none";
+    callback();
+  }, 1600);
 }
 
 // =====================
@@ -646,11 +706,16 @@ if (rewinding) {
 
 draw();
 startBtn.addEventListener("click", () => {
-  startScreen.style.display = "none";
-  gameStarted = true;
+  playFlagTransition(() => {
+    startScreen.style.display = "none";
+    gameStarted = true;
+  });
 });
+  
 resetBtn.addEventListener("click", () => {
-  location.reload();
+  playFlagTransition(() => {
+    location.reload();
+  });
 });
 </script>
 
