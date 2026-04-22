@@ -166,19 +166,13 @@
 #flag {
   position: absolute;
   top: 0;
-  left: 100%;
+  left: 0;
   height: 100%;
   width: auto;
+  transform: translateX(100%);
 }
 
-@keyframes flagSweep {
-  0% {
-    left: 100%;
-  }
-  100% {
-    left: -120%;
-  }
-}
+
   </style>
 </head>
 <div id="startScreen">
@@ -277,21 +271,55 @@ function easeInOutCubic(t) {
 function playFlagTransition(callback) {
   flagOverlay.style.display = "block";
 
-  flag.style.animation = "none";
-  void flag.offsetWidth; // reset animation
-
-  flag.style.animation = "flagSweep 1.6s linear forwards";
-
   const sounds = [dojyan1, dojyan2, dojyan3];
   const chosen = sounds[Math.floor(Math.random() * sounds.length)];
-
   chosen.currentTime = 0;
   chosen.play().catch(()=>{});
 
-  setTimeout(() => {
-    flagOverlay.style.display = "none";
-    callback();
-  }, 1600);
+  const start = performance.now();
+  const duration = 1800; // total animation time
+
+  function animate(now) {
+    let t = (now - start) / duration;
+    if (t > 1) t = 1;
+
+    let eased = easeInOutCubic(t);
+
+    // split motion into 3 phases:
+    // 0 - 0.4 = ease in
+    // 0.4 - 0.6 = hold center
+    // 0.6 - 1 = ease out
+
+    let x;
+
+    if (t < 0.4) {
+      // ease in from right
+      const localT = t / 0.4;
+      const e = easeInOutCubic(localT);
+      x = 100 - e * 100;
+    } 
+    else if (t < 0.6) {
+      // hold center
+      x = 0;
+    } 
+    else {
+      // ease out to left
+      const localT = (t - 0.6) / 0.4;
+      const e = easeInOutCubic(localT);
+      x = 0 - e * 120;
+    }
+
+    flag.style.transform = `translateX(${x}%)`;
+
+    if (t < 1) {
+      requestAnimationFrame(animate);
+    } else {
+      flagOverlay.style.display = "none";
+      callback();
+    }
+  }
+
+  requestAnimationFrame(animate);
 }
 
 // =====================
