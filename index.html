@@ -779,26 +779,30 @@ draw();
 
 
   
-startBtn.addEventListener("click", () => {
+startBtn.addEventListener("click", async () => {
 
-  // 1. blue cinematic fade starts instantly
+  // show blue cinematic immediately
   blueOverlay.classList.add("blue-cinematic");
 
-  // 2. hide menu
+  // hide menu
   startScreen.style.display = "none";
 
-  // 3. show gif layer
+  // show GIF overlay
   gifOverlay.style.display = "flex";
 
-  // 4. play sound + gif together
-  sbrSound.currentTime = 0;
-  sbrSound.play().catch(()=>{});
-
-  // restart gif (forces replay)
+  // FORCE GIF RESTART (important fix)
+  sbrGif.src = "";
   sbrGif.src = "sbr.gif";
 
-  // 5. wait until gif "finishes"
-  // (GIF workaround: use fixed duration)
+  // play sound properly
+  try {
+    sbrSound.currentTime = 0;
+    await sbrSound.play();
+  } catch (e) {
+    console.log("Audio blocked:", e);
+  }
+
+  // wait fixed duration (GIFs don’t reliably trigger "ended")
   setTimeout(() => {
 
     gifOverlay.style.display = "none";
@@ -807,7 +811,6 @@ startBtn.addEventListener("click", () => {
     gameStarted = true;
 
   }, 2500); // adjust to your GIF length
-
 });
 
 
@@ -815,11 +818,13 @@ startBtn.addEventListener("click", () => {
 resetBtn.addEventListener("click", () => {
   location.reload();
 });
-</script>
-  
+
 <div id="gifOverlay">
   <img id="sbrGif" src="sbr.gif" />
 </div>
   
+</script>
+  
+
 </body>
 </html>
