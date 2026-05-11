@@ -315,7 +315,9 @@
 
 <div id="blueOverlay"></div>
 
-
+<div id="gifOverlay">
+  <img id="sbrGif" src="sbr.gif" />
+</div>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -792,8 +794,7 @@ startBtn.addEventListener("click", async () => {
 
   // FORCE GIF RESTART (important fix)
   sbrGif.src = "";
-  sbrGif.src = "sbr.gif";
-
+sbrGif.src = "sbr.gif?reload=" + Date.now();
   // play sound properly
   try {
     sbrSound.currentTime = 0;
@@ -819,9 +820,6 @@ resetBtn.addEventListener("click", () => {
   location.reload();
 });
 
-<div id="gifOverlay">
-  <img id="sbrGif" src="sbr.gif" />
-</div>
   
 </script>
   
