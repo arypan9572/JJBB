@@ -138,6 +138,50 @@
 }
 
 
+#gifOverlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  z-index: 50000;
+}
+
+#sbrGif {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* chroma key effect */
+  filter: contrast(1.2) brightness(1.1);
+}
+
+/* blue ZA WARUDO overlay */
+#blueOverlay {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40000;
+
+  background: radial-gradient(circle,
+    rgba(0,170,255,0.25),
+    rgba(0,60,180,0.9)
+  );
+}
+
+.blue-cinematic {
+  animation: blueIn 1.2s forwards;
+}
+
+@keyframes blueIn {
+  0% { opacity: 0; filter: blur(0px); }
+  50% { opacity: 0.6; filter: blur(3px); }
+  100% { opacity: 1; filter: blur(8px); }
+}
+
+
 #videoCanvas {
   position: fixed;
   inset: 0;
@@ -267,14 +311,11 @@
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
   <audio id="bitesSound" src="bites.mp3"></audio>
+  <audio id="sbrSound" src="sbr.mp3"></audio>
 
 <div id="blueOverlay"></div>
 
-<video id="introVideo" preload="auto" style="display:none">
-  <source src="intro.mp4" type="video/mp4">
-</video>
 
-<canvas id="videoCanvas"></canvas>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -285,11 +326,11 @@ const tomattaSound = document.getElementById("tomattaSound");
 const timeResumeSound = document.getElementById("timeResumeSound");
 const bitesSound = document.getElementById("bitesSound");
 
+const gifOverlay = document.getElementById("gifOverlay");
+const sbrGif = document.getElementById("sbrGif");
+const sbrSound = document.getElementById("sbrSound");
 const blueOverlay = document.getElementById("blueOverlay");
-const introVideo = document.getElementById("introVideo");
 
-const videoCanvas = document.getElementById("videoCanvas");
-const videoCtx = videoCanvas.getContext("2d");
   
 const zaText = document.getElementById("zaText");
 const gameOverScreen = document.getElementById("gameOverScreen");
@@ -439,14 +480,14 @@ function randomAngle() {
   };
 }
 
-const start = randomAngle();
+const initialAngle = randomAngle();
 
 const ball = {
   x: canvas.width / 2,
   y: canvas.height - 50,
   radius: 10,
-  speedX: start.x,
-  speedY: start.y
+ speedX: initialAngle.x,
+speedY: initialAngle.y
 };
 
 ballHistory.push({ x: ball.x, y: ball.y });
@@ -736,95 +777,37 @@ if (rewinding) {
 
 draw();
 
-function renderChromaVideo() {
 
-  videoCanvas.width = window.innerWidth;
-  videoCanvas.height = window.innerHeight;
-
-  function drawFrame() {
-
-    if (introVideo.paused || introVideo.ended) return;
-
-    // draw video frame
-    videoCtx.drawImage(
-      introVideo,
-      0,
-      0,
-      videoCanvas.width,
-      videoCanvas.height
-    );
-
-    // get pixels
-    const frame = videoCtx.getImageData(
-      0,
-      0,
-      videoCanvas.width,
-      videoCanvas.height
-    );
-
-    const data = frame.data;
-
-    // chroma key removal
-    for (let i = 0; i < data.length; i += 4) {
-
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-
-      // target color: #00ff01
-      if (
-        r < 30 &&
-        g > 220 &&
-        b < 30
-      ) {
-        data[i + 3] = 0;
-      }
-    }
-
-    videoCtx.putImageData(frame, 0, 0);
-
-    requestAnimationFrame(drawFrame);
-  }
-
-  drawFrame();
-}
   
 startBtn.addEventListener("click", () => {
 
-  // cinematic blue freeze
+  // 1. blue cinematic fade starts instantly
   blueOverlay.classList.add("blue-cinematic");
 
-  // hide menu
+  // 2. hide menu
   startScreen.style.display = "none";
 
-  // cinematic delay
+  // 3. show gif layer
+  gifOverlay.style.display = "flex";
+
+  // 4. play sound + gif together
+  sbrSound.currentTime = 0;
+  sbrSound.play().catch(()=>{});
+
+  // restart gif (forces replay)
+  sbrGif.src = "sbr.gif";
+
+  // 5. wait until gif "finishes"
+  // (GIF workaround: use fixed duration)
   setTimeout(() => {
 
-    // show chroma canvas
-    videoCanvas.style.display = "block";
-
-    // start video
-    introVideo.currentTime = 0;
-
-    introVideo.play().then(() => {
-
-      renderChromaVideo();
-
-    }).catch(err => {
-      console.log(err);
-    });
-
-  }, 1400);
-
-  // when finished
-  introVideo.onended = () => {
-
-    videoCanvas.style.display = "none";
-
+    gifOverlay.style.display = "none";
     blueOverlay.style.display = "none";
 
     gameStarted = true;
-  };
+
+  }, 2500); // adjust to your GIF length
+
 });
 
 
@@ -833,6 +816,10 @@ resetBtn.addEventListener("click", () => {
   location.reload();
 });
 </script>
-
+  
+<div id="gifOverlay">
+  <img id="sbrGif" src="sbr.gif" />
+</div>
+  
 </body>
 </html>
