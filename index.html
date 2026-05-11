@@ -87,6 +87,73 @@
   z-index: 9999;
 }
 
+#blueOverlay {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at center,
+      rgba(80,180,255,0.15) 0%,
+      rgba(0,140,255,0.4) 35%,
+      rgba(0,40,120,0.95) 100%);
+      
+  opacity: 0;
+  pointer-events: none;
+  z-index: 40000;
+
+  backdrop-filter: blur(0px);
+}
+
+.blue-cinematic {
+  animation: blueTimeStop 1.8s forwards;
+}
+
+@keyframes blueTimeStop {
+
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  25% {
+    opacity: 0.4;
+    backdrop-filter: blur(2px);
+    transform: scale(1.01);
+  }
+
+  55% {
+    opacity: 0.75;
+    backdrop-filter: blur(6px);
+    transform: scale(1.02);
+    filter: brightness(1.3);
+  }
+
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+    transform: scale(1.03);
+    filter: brightness(0.7);
+  }
+}
+
+
+#introVideo {
+  position: fixed;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  background: black;
+
+  z-index: 50000;
+
+  display: none;
+}
+
 #gameOverText {
   font-size: 60px;
   color: red;
@@ -191,8 +258,6 @@
     <p>BITES THE DUST: rewinds time, all bricks in ball path disintegrate</p>
   </div>
 
-  <div id="flagOverlay">
-    <img id="flag" src="https://preview.redd.it/petition-to-change-this-subs-picture-today-into-funny-v0-nmsci5a449831.png?auto=webp&s=506b92165d2864a072866ac1925e741cf6acc5ee" /></div>
 
   <button id="startBtn">START GAME</button>
   <p class="hint">Press SPACE to start</p>
@@ -217,9 +282,7 @@
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
   <audio id="bitesSound" src="bites.mp3"></audio>
-  <audio id="dojyan1" src="dojyan1.mp3"></audio>
-  <audio id="dojyan2" src="dojyan2.mp3"></audio>
-  <audio id="dojyan3" src="dojyan3.mp3"></audio>
+ 
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -230,12 +293,8 @@ const tomattaSound = document.getElementById("tomattaSound");
 const timeResumeSound = document.getElementById("timeResumeSound");
 const bitesSound = document.getElementById("bitesSound");
 
-const flagOverlay = document.getElementById("flagOverlay");
-const flag = document.getElementById("flag");
-
-const dojyan1 = document.getElementById("dojyan1");
-const dojyan2 = document.getElementById("dojyan2");
-const dojyan3 = document.getElementById("dojyan3");
+const blueOverlay = document.getElementById("blueOverlay");
+const introVideo = document.getElementById("introVideo");
   
 const zaText = document.getElementById("zaText");
 const gameOverScreen = document.getElementById("gameOverScreen");
@@ -268,59 +327,7 @@ function easeInOutCubic(t) {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function playFlagTransition(callback) {
-  flagOverlay.style.display = "block";
 
-  const sounds = [dojyan1, dojyan2, dojyan3];
-  const chosen = sounds[Math.floor(Math.random() * sounds.length)];
-  chosen.currentTime = 0;
-  chosen.play().catch(()=>{});
-
-  const start = performance.now();
-  const duration = 1800; // total animation time
-
-  function animate(now) {
-    let t = (now - start) / duration;
-    if (t > 1) t = 1;
-
-    let eased = easeInOutCubic(t);
-
-    // split motion into 3 phases:
-    // 0 - 0.4 = ease in
-    // 0.4 - 0.6 = hold center
-    // 0.6 - 1 = ease out
-
-    let x;
-
-    if (t < 0.4) {
-      // ease in from right
-      const localT = t / 0.4;
-      const e = easeInOutCubic(localT);
-      x = 100 - e * 100;
-    } 
-    else if (t < 0.6) {
-      // hold center
-      x = 0;
-    } 
-    else {
-      // ease out to left
-      const localT = (t - 0.6) / 0.4;
-      const e = easeInOutCubic(localT);
-      x = 0 - e * 120;
-    }
-
-    flag.style.transform = `translateX(${x}%)`;
-
-    if (t < 1) {
-      requestAnimationFrame(animate);
-    } else {
-      flagOverlay.style.display = "none";
-      callback();
-    }
-  }
-
-  requestAnimationFrame(animate);
-}
 
 // =====================
 // ZA WARUDO
@@ -733,12 +740,48 @@ if (rewinding) {
 }
 
 draw();
+  
 startBtn.addEventListener("click", () => {
-  playFlagTransition(() => {
-    startScreen.style.display = "none";
+
+  // start cinematic overlay
+  blueOverlay.classList.add("blue-cinematic");
+
+  // hide menu
+  startScreen.style.display = "none";
+
+  // wait for cinematic build-up
+  setTimeout(() => {
+
+    // show video
+    introVideo.style.display = "block";
+
+    introVideo.currentTime = 0;
+
+    introVideo.play().catch(err => {
+      console.log(err);
+    });
+
+  }, 1400);
+
+  // when video ends
+  introVideo.onended = () => {
+
+    // hide video
+    introVideo.style.display = "none";
+
+    // remove overlay
+    blueOverlay.style.display = "none";
+
+    // start game
     gameStarted = true;
-  });
+  };
 });
+
+<div id="blueOverlay"></div>
+
+<video id="introVideo" preload="auto">
+  <source src="intro.mp4" type="video/mp4">
+</video>
   
 resetBtn.addEventListener("click", () => {
   playFlagTransition(() => {
