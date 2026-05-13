@@ -73,6 +73,29 @@
       50% { filter: hue-rotate(260deg) brightness(1.4); }
       100% { filter: hue-rotate(0deg) brightness(1); }
     }
+
+    @keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.panel, #startBtn, #startScreen h1 {
+  opacity: 0;
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+#startScreen h1 { animation-delay: 0.1s; }
+.panel:nth-of-type(1) { animation-delay: 0.3s; }
+.panel:nth-of-type(2) { animation-delay: 0.5s; }
+#startBtn { animation-delay: 0.7s; }
+.hint { animation: fadeInUp 0.8s ease forwards; animation-delay: 0.9s; opacity: 0; }
+    
     #gameOverScreen {
   position: fixed;
   top: 0;
@@ -201,19 +224,7 @@
   filter: contrast(1.2) brightness(1.1);
 }
 
-/* blue ZA WARUDO overlay */
-#blueOverlay {
-  position: fixed;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  z-index: 40000;
 
-  background: radial-gradient(circle,
-    rgba(0,170,255,0.25),
-    rgba(0,60,180,0.9)
-  );
-}
 
 .blue-cinematic {
   animation: blueIn 1.2s forwards;
@@ -311,6 +322,10 @@
 .cooldownTitle {
   font-weight: bold;
   margin-bottom: 6px;
+}
+
+.hidden-ui {
+  display: none !important;
 }
 
 .cooldownBar {
@@ -522,7 +537,31 @@
   font-size: 12px;
   opacity: 0.7;
 }
+.cmoon-gravity {
+  animation: cmoonGravity 1.2s ease-out;
+}
 
+@keyframes cmoonGravity {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  30% {
+    transform: scale(1.03);
+    filter: brightness(1.4) contrast(1.2);
+  }
+
+  70% {
+    transform: scale(0.98);
+    filter: brightness(0.7) hue-rotate(40deg);
+  }
+
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
 
 
 
@@ -577,8 +616,8 @@
 <div id="cmoonVisual"></div>
 <div id="standFx"></div>
 
-<div id="cooldownUI">
-
+<div id="cooldownUI" class="hidden-ui">
+  
   <div class="cooldownCard">
     <div class="cooldownTitle">ZA WARUDO</div>
 
@@ -934,14 +973,21 @@ function triggerCMoonEffect() {
 
   showCMoonVisual(dir);
 
-  // rotate ball trajectory by 90 degrees
+  document.body.classList.add("cmoon-gravity");
+
+  setTimeout(() => {
+    document.body.classList.remove("cmoon-gravity");
+  }, 1200);
+
   const oldX = ball.speedX;
   const oldY = ball.speedY;
 
   ball.speedX = -oldY * dir;
   ball.speedY = oldX * dir;
-}
 
+  // EXTRA gravity kick
+  ball.speedY *= 1.4;
+}
 function activateCMoon() {
   const now = performance.now();
 
@@ -1137,27 +1183,7 @@ function brickCollision() {
 // =====================
 function drawBall() {
 
-  // DRAW TRAIL
-  for (let i = 0; i < ball.trail.length; i++) {
-
-    const p = ball.trail[i];
-
-    ctx.beginPath();
-
-  ctx.arc(
-  p.x,
-  p.y,
-  ball.radius,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fillStyle =
-      `rgba(0,255,120,${i / ball.trail.length})`;
-
-    ctx.fill();
-  }
-
+  
   // MAIN BALL
   ctx.beginPath();
 
@@ -1209,15 +1235,7 @@ function moveBall() {
   ball.x += ball.speedX;
   ball.y += ball.speedY;
 
-  ball.trail.push({
-  x: ball.x,
-  y: ball.y
-});
-
-if (ball.trail.length > 15) {
-  ball.trail.shift();
-}
-
+  
   ball.speedX *= 1.0005;
   ball.speedY *= 1.0005;
 
@@ -1259,8 +1277,9 @@ if (ball.trail.length > 15) {
     lives--;
 
     if (lives <= 0) {
-      gameOver = true;
-      gameOverScreen.style.display = "flex";
+     gameOver = true;
+gameOverScreen.style.display = "flex";
+document.getElementById("cooldownUI").classList.add("hidden-ui");
       return;
     }
 
@@ -1351,8 +1370,11 @@ if (rewinding) {
   drawBricks();
   drawScore();
   drawLives();
-  if (gameStarted) {
+  if (gameStarted && !gameOver) {
+  document.getElementById("cooldownUI").classList.remove("hidden-ui");
   updateCooldowns();
+} else {
+  document.getElementById("cooldownUI").classList.add("hidden-ui");
 }
 
   if (!gameOver) {
@@ -1368,6 +1390,7 @@ startBtn.addEventListener("click", async () => {
   const introImg = document.getElementById("introImg");
 
   gameStarted = false;
+  document.getElementById("cooldownUI").classList.add("hidden-ui");
 
   // show image off-screen
   introImg.style.display = "block";
@@ -1402,6 +1425,7 @@ startBtn.addEventListener("click", async () => {
  // STEP 3: GIF lasts 4.7s after it starts (3.2s + 4.7s = 7.9s total)
 setTimeout(() => {
   gifOverlay.style.display = "none";
+  document.getElementById("cooldownUI").classList.remove("hidden-ui");
   gameStarted = true;
 }, 3200 + 4700);
 });
