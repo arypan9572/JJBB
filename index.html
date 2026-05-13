@@ -436,11 +436,16 @@
   position: absolute;
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-bottom: 10px solid violet;
-  opacity: 0.8;
+
+  /* equilateral triangle */
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 24px solid violet;
+
+  opacity: 0.75;
   filter: drop-shadow(0 0 6px violet);
+
+  transform: scale(2.5); /* 🔥 your 2.5x size request */
 }
 .bitesRing {
   width: 140px;
@@ -794,44 +799,46 @@ let triangleSpeed = 2;
 let triangleInterval;
 let triangleActive = false;
 
-function spawnTriangleRow() {
-  const count = 40;
 
-  for (let i = 0; i < count; i++) {
+let triangles = [];
+const TRIANGLE_COUNT = 420; // dense stream
+
+function initTriangles() {
+  triangles = [];
+
+  for (let i = 0; i < TRIANGLE_COUNT; i++) {
     const tri = document.createElement("div");
     tri.className = "triangle";
 
-    tri.style.left = (window.innerWidth - (i * 25)) + "px";
-    tri.style.top = (window.innerHeight / 2 + (Math.random() * 60 - 30)) + "px";
+    resetTriangle(tri, i * 25);
 
     triangleField.appendChild(tri);
-
-    animateTriangle(tri);
+    triangles.push(tri);
   }
 }
 
-function animateTriangle(tri) {
-  let x = parseFloat(tri.style.left);
+function resetTriangle(tri, offsetX = window.innerWidth) {
+  tri.x = offsetX + Math.random() * 200;
+  tri.y = window.innerHeight / 2 + (Math.random() * 120 - 60);
+}
 
-  function move() {
-    if (!triangleActive) {
-      tri.remove();
-      return;
+function updateTriangles() {
+  if (!triangleActive) return;
+
+  for (let tri of triangles) {
+    tri.x -= triangleSpeed;
+
+    // wrap around → infinite effect
+    if (tri.x < -50) {
+      tri.x = window.innerWidth + Math.random() * 300;
+      tri.y = window.innerHeight / 2 + (Math.random() * 120 - 60);
     }
 
-    x -= triangleSpeed;
-
-    tri.style.left = x + "px";
-
-    if (x < -50) {
-      tri.remove();
-      return;
-    }
-
-    requestAnimationFrame(move);
+    tri.style.left = tri.x + "px";
+    tri.style.top = tri.y + "px";
   }
 
-  move();
+  requestAnimationFrame(updateTriangles);
 }
 
 function createRing(type, arrowClass) {
@@ -1044,8 +1051,8 @@ function activateBites() {
   triangleActive = true;
   triangleSpeed = Math.min(12, Math.abs(ball.speedX) + Math.abs(ball.speedY));
 
-  spawnTriangleRow();
-
+  triangleActive = true;
+  triangleSpeed = Math.min(18, Math.abs(ball.speedX) + Math.abs(ball.speedY));
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
 
@@ -1063,7 +1070,11 @@ function activateBites() {
     clearInterval(sync);
 
     triangleActive = false;
-    triangleField.innerHTML = "";
+
+// reset positions so next use is clean
+for (let tri of triangles) {
+  tri.x = Math.random() * window.innerWidth;
+}
 
     document.body.classList.remove("bites-effect");
 
@@ -1512,7 +1523,8 @@ if (rewinding) {
 }
 
 draw();
-
+initTriangles();
+updateTriangles();
 
   
 startBtn.addEventListener("click", async () => {
