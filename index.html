@@ -336,7 +336,6 @@
   <p class="hint">Press SPACE to start</p>
 </div>
   
-<body>
   <h1>Breakout Starter Game</h1>
   <canvas id="gameCanvas" width="800" height="600"></canvas>
 
@@ -553,7 +552,7 @@ function activateCMoon() {
     let duration = audio.duration;
 
     if (isNaN(duration) || !isFinite(duration)) {
-      duration = 4; // fallback safety
+      duration = 4;
     }
 
     const midpoint = (duration / 2) * 1000;
@@ -563,6 +562,16 @@ function activateCMoon() {
     setTimeout(() => {
       triggerCMoonEffect();
     }, midpoint);
+
+    // IMPORTANT: unlock powers again
+    setTimeout(() => {
+      cMoonActive = false;
+    }, duration * 1000 + 500);
+  });
+
+  // fallback if metadata never loads
+  audio.addEventListener("error", () => {
+    cMoonActive = false;
   });
 }
 
