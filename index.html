@@ -284,7 +284,195 @@
   margin-bottom: 20px;
 }
     
+/* =========================
+   STAND VFX / COOLDOWNS
+========================= */
 
+#cooldownUI {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 220px;
+}
+
+.cooldownCard {
+  background: rgba(0,0,0,0.75);
+  border: 2px solid white;
+  border-radius: 14px;
+  padding: 10px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.cooldownTitle {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.cooldownBar {
+  width: 100%;
+  height: 10px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cooldownFill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.zaFill {
+  background: linear-gradient(90deg, gold, orange);
+}
+
+.bitesFill {
+  background: linear-gradient(90deg, violet, hotpink);
+}
+
+.cmoonFill {
+  background: linear-gradient(90deg, cyan, deepskyblue);
+}
+
+.cooldownTime {
+  margin-top: 5px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* BIG CIRCLE FX */
+
+#standFx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 88888;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 4px solid rgba(255,255,255,0.8);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.zaRing {
+  width: 120px;
+  height: 120px;
+  border-color: gold;
+  animation:
+    ringExpand 1.2s ease-out forwards,
+    ringRotate 2s linear infinite;
+  box-shadow:
+    0 0 30px gold,
+    0 0 80px orange;
+}
+
+.bitesRing {
+  width: 140px;
+  height: 140px;
+  border-color: violet;
+  animation:
+    ringExpand 1.5s ease-out forwards,
+    reverseRotate 1.5s linear infinite;
+  box-shadow:
+    0 0 30px violet,
+    0 0 90px hotpink;
+}
+
+.cmoonRing {
+  width: 140px;
+  height: 140px;
+  border-color: cyan;
+  animation:
+    ringExpand 1s ease-out forwards,
+    ringRotate 0.8s linear infinite;
+  box-shadow:
+    0 0 40px cyan,
+    0 0 100px deepskyblue;
+}
+
+.arrow {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-top: 4px solid white;
+  border-right: 4px solid white;
+  top: 50%;
+  left: 50%;
+  transform-origin: -70px center;
+}
+
+.arrowGold { border-color: gold; }
+.arrowPurple { border-color: violet; }
+.arrowBlue { border-color: cyan; }
+
+@keyframes ringExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(5);
+    opacity: 0;
+  }
+}
+
+@keyframes ringRotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes reverseRotate {
+  from {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+}
+
+/* FLASH */
+
+.flashZA {
+  animation: flashZAAnim 0.7s ease-out;
+}
+
+.flashBites {
+  animation: flashBitesAnim 0.8s ease-out;
+}
+
+.flashCMoon {
+  animation: flashCMoonAnim 0.8s ease-out;
+}
+
+@keyframes flashZAAnim {
+  0% { background: rgba(255,220,100,0.9); }
+  100% { background: transparent; }
+}
+
+@keyframes flashBitesAnim {
+  0% { background: rgba(255,0,255,0.8); }
+  100% { background: transparent; }
+}
+
+@keyframes flashCMoonAnim {
+  0% { background: rgba(0,200,255,0.8); }
+  100% { background: transparent; }
+}
 .panel {
   border: 2px solid white;
   padding: 15px;
@@ -358,6 +546,62 @@
 
 <div id="blueOverlay"></div>
 <div id="cmoonVisual"></div>
+<div id="standFx"></div>
+
+<div id="cooldownUI">
+
+  <div class="cooldownCard">
+    <div class="cooldownTitle">ZA WARUDO</div>
+
+    <div class="cooldownBar">
+      <div
+        id="zaCooldownFill"
+        class="cooldownFill zaFill">
+      </div>
+    </div>
+
+    <div
+      id="zaCooldownText"
+      class="cooldownTime">
+      READY
+    </div>
+  </div>
+
+  <div class="cooldownCard">
+    <div class="cooldownTitle">BITES THE DUST</div>
+
+    <div class="cooldownBar">
+      <div
+        id="bitesCooldownFill"
+        class="cooldownFill bitesFill">
+      </div>
+    </div>
+
+    <div
+      id="bitesCooldownText"
+      class="cooldownTime">
+      READY
+    </div>
+  </div>
+
+  <div class="cooldownCard">
+    <div class="cooldownTitle">C-MOON</div>
+
+    <div class="cooldownBar">
+      <div
+        id="cmoonCooldownFill"
+        class="cooldownFill cmoonFill">
+      </div>
+    </div>
+
+    <div
+      id="cmoonCooldownText"
+      class="cooldownTime">
+      READY
+    </div>
+  </div>
+
+</div>
 
 <div id="gifOverlay">
   <img id="sbrGif" src="sbr.gif" />
@@ -412,6 +656,18 @@ let rewindDuration = 8000;
 let rewindStartTime = 0;
 let highlightPoints = [];
 
+// ======================
+// COOLDOWNS
+// ======================
+
+const zaCooldown = 15000;
+const bitesCooldown = 45000;
+const cmoonCooldown = 60000;
+
+let zaLastUsed = -Infinity;
+let bitesLastUsed = -Infinity;
+let cmoonLastUsed = -Infinity;
+
 // easing
 function easeInOutCubic(t) {
   return t < 0.5
@@ -419,15 +675,120 @@ function easeInOutCubic(t) {
     : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
+// ======================
+// VFX
+// ======================
 
+function createRing(type, arrowClass) {
+  const fx = document.getElementById("standFx");
+
+  const ring = document.createElement("div");
+  ring.className = `ring ${type}`;
+
+  fx.appendChild(ring);
+
+  for (let i = 0; i < 4; i++) {
+    const arrow = document.createElement("div");
+
+    arrow.className = `arrow ${arrowClass}`;
+
+    arrow.style.transform =
+      `rotate(${i * 90}deg) translateX(70px) rotate(45deg)`;
+
+    ring.appendChild(arrow);
+  }
+
+  setTimeout(() => {
+    ring.remove();
+  }, 2000);
+}
+
+function flashScreen(className) {
+  blueOverlay.className = "";
+  void blueOverlay.offsetWidth;
+  blueOverlay.classList.add(className);
+
+  setTimeout(() => {
+    blueOverlay.className = "";
+  }, 800);
+}
+
+// ======================
+// COOLDOWN UI
+// ======================
+
+function updateCooldowns() {
+  const now = performance.now();
+
+  updateCooldown(
+    now,
+    zaLastUsed,
+    zaCooldown,
+    "zaCooldownFill",
+    "zaCooldownText"
+  );
+
+  updateCooldown(
+    now,
+    bitesLastUsed,
+    bitesCooldown,
+    "bitesCooldownFill",
+    "bitesCooldownText"
+  );
+
+  updateCooldown(
+    now,
+    cmoonLastUsed,
+    cmoonCooldown,
+    "cmoonCooldownFill",
+    "cmoonCooldownText"
+  );
+}
+
+function updateCooldown(now, lastUsed, cooldown, fillId, textId) {
+  const fill = document.getElementById(fillId);
+  const text = document.getElementById(textId);
+
+  const elapsed = now - lastUsed;
+
+  if (elapsed >= cooldown) {
+    fill.style.width = "100%";
+    text.textContent = "READY";
+    return;
+  }
+
+  const remaining = Math.ceil((cooldown - elapsed) / 1000);
+
+  fill.style.width = `${(elapsed / cooldown) * 100}%`;
+
+  text.textContent = `${remaining}s`;
+}
 
 // =====================
 // ZA WARUDO
 // =====================
 function activateZaWarudo() {
+  const now = performance.now();
+
+  if (now - zaLastUsed < zaCooldown) return;
   if (timeStopped || bitesActive || cMoonActive) return;
 
+  zaLastUsed = now;
+
+  createRing("zaRing", "arrowGold");
+  canvas.animate([
+  { transform: "translate(0px,0px)" },
+  { transform: "translate(-8px,4px)" },
+  { transform: "translate(8px,-4px)" },
+  { transform: "translate(0px,0px)" }
+], {
+  duration: 300,
+  iterations: 2
+});
+  flashScreen("flashZA");
+
   timeStopped = true;
+
   document.body.classList.add("za-warudo");
 
   const savedX = ball.speedX;
@@ -439,6 +800,7 @@ function activateZaWarudo() {
 
   function slowDownStep(now) {
     const t = Math.min((now - start) / 500, 1);
+
     ball.speedX = startSpeedX * (1 - t);
     ball.speedY = startSpeedY * (1 - t);
 
@@ -451,22 +813,24 @@ function activateZaWarudo() {
 
   requestAnimationFrame(slowDownStep);
 
+  (Math.random() < 0.5
+    ? zaWarudoSound
+    : tomattaSound).play();
+
+  zaText.style.animation = "none";
+  void zaText.offsetWidth;
+  zaText.style.animation = "zaEcho 1.5s ease-out";
+
   setTimeout(() => {
-    (Math.random() < 0.5 ? zaWarudoSound : tomattaSound).play();
-
-    setTimeout(() => {
-      zaText.style.animation = "none";
-      void zaText.offsetWidth;
-      zaText.style.animation = "zaEcho 1.5s ease-out";
-    }, 670);
-  }, 100);
-
-  setTimeout(() => timeResumeSound.play(), 5700);
+    timeResumeSound.play();
+  }, 5700);
 
   setTimeout(() => {
     timeStopped = false;
+
     ball.speedX = savedX;
     ball.speedY = savedY;
+
     document.body.classList.remove("za-warudo");
   }, 8000);
 }
@@ -490,7 +854,15 @@ function showCMoonVisual(dir) {
 // BITES THE DUST (YOUR VERSION RESTORD)
 // =====================
 function activateBites() {
+  const now = performance.now();
+
+  if (now - bitesLastUsed < bitesCooldown) return;
   if (bitesActive || timeStopped || cMoonActive) return;
+
+  bitesLastUsed = now;
+
+  createRing("bitesRing", "arrowPurple");
+  flashScreen("flashBites");
 
   bitesActive = true;
   rewinding = true;
@@ -500,30 +872,25 @@ function activateBites() {
 
   document.body.classList.add("bites-effect");
 
-  highlightPoints = [];
-  for (let i = 0; i < 8; i++) {
-    if (ballHistory.length > 0) {
-      highlightPoints.push(Math.floor(Math.random() * ballHistory.length));
-    }
-  }
+  rewindStartTime = performance.now();
 
-rewindStartTime = performance.now();
+  rewindStartIndex = 0;
 
-// 🔥 lock how far back we go (last 2 seconds of gameplay)
-rewindStartIndex = 0; // go all the way back to spawn
   setTimeout(() => {
     document.body.classList.remove("bites-effect");
 
     const newAngle = randomAngle();
+
     ball.x = canvas.width / 2;
     ball.y = canvas.height - 50;
+
     ball.speedX = newAngle.x;
     ball.speedY = newAngle.y;
 
     rewinding = false;
     bitesActive = false;
+
     ballHistory = [];
-    highlightPoints = [];
   }, rewindDuration);
 }
   
@@ -541,14 +908,27 @@ function triggerCMoonEffect() {
 }
 
 function activateCMoon() {
+  const now = performance.now();
+
+  if (now - cmoonLastUsed < cmoonCooldown) return;
   if (timeStopped || bitesActive || cMoonActive) return;
+
+  cmoonLastUsed = now;
+
+  createRing("cmoonRing", "arrowBlue");
+  flashScreen("flashCMoon");
 
   cMoonActive = true;
 
-  const src = cMoonAudios[Math.floor(Math.random() * cMoonAudios.length)];
+  const src =
+    cMoonAudios[
+      Math.floor(Math.random() * cMoonAudios.length)
+    ];
+
   const audio = new Audio(src);
 
   audio.addEventListener("loadedmetadata", () => {
+
     let duration = audio.duration;
 
     if (isNaN(duration) || !isFinite(duration)) {
@@ -563,13 +943,12 @@ function activateCMoon() {
       triggerCMoonEffect();
     }, midpoint);
 
-    // IMPORTANT: unlock powers again
     setTimeout(() => {
       cMoonActive = false;
     }, duration * 1000 + 500);
+
   });
 
-  // fallback if metadata never loads
   audio.addEventListener("error", () => {
     cMoonActive = false;
   });
@@ -604,9 +983,13 @@ const initialAngle = randomAngle();
 const ball = {
   x: canvas.width / 2,
   y: canvas.height - 50,
+
   radius: 10,
- speedX: initialAngle.x,
-speedY: initialAngle.y
+
+  speedX: initialAngle.x,
+  speedY: initialAngle.y,
+
+  trail: []
 };
 
 ballHistory.push({ x: ball.x, y: ball.y });
@@ -718,10 +1101,51 @@ function brickCollision() {
 // DRAW BALL (SIMPLE ORIGINAL STYLE)
 // =====================
 function drawBall() {
+
+  // DRAW TRAIL
+  for (let i = 0; i < ball.trail.length; i++) {
+
+    const p = ball.trail[i];
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+
+      ball.radius * (i / ball.trail.length),
+
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fillStyle =
+      `rgba(0,255,120,${i / ball.trail.length})`;
+
+    ctx.fill();
+  }
+
+  // MAIN BALL
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+
+  ctx.arc(
+    ball.x,
+    ball.y,
+    ball.radius,
+    0,
+    Math.PI * 2
+  );
+
   ctx.fillStyle = "lime";
+
+  // glow effect
+  ctx.shadowBlur = 20;
+  ctx.shadowColor = "lime";
+
   ctx.fill();
+
+  // IMPORTANT reset glow
+  ctx.shadowBlur = 0;
 }
 
 // =====================
@@ -755,6 +1179,15 @@ function moveBall() {
 
   ball.x += ball.speedX;
   ball.y += ball.speedY;
+
+  ball.trail.push({
+  x: ball.x,
+  y: ball.y
+});
+
+if (ball.trail.length > 15) {
+  ball.trail.shift();
+}
 
   ball.speedX *= 1.0005;
   ball.speedY *= 1.0005;
@@ -889,6 +1322,7 @@ if (rewinding) {
   drawBricks();
   drawScore();
   drawLives();
+  updateCooldowns();
 
   if (!gameOver) {
     requestAnimationFrame(draw);
