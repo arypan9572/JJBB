@@ -799,51 +799,44 @@ draw();
 startBtn.addEventListener("click", async () => {
   const introImg = document.getElementById("introImg");
 
-  // reset states
   gameStarted = false;
 
-  // show image OFF SCREEN first
+  // show image off-screen
   introImg.style.display = "block";
   introImg.style.right = "-300px";
-
-  // force reflow so animation triggers
   introImg.offsetHeight;
-
-  // slide it in
   introImg.style.right = "20px";
 
-  // keep start screen visible initially
   startScreen.style.display = "flex";
 
-  // start GIF hidden behind everything (but running)
-  gifOverlay.style.display = "flex";
-
-  sbrGif.src = "";
-  sbrGif.src = "sbr.gif?reload=" + Date.now();
-
-  // play sound
+  // play sound immediately
   try {
     sbrSound.currentTime = 0;
     await sbrSound.play();
   } catch (e) {}
 
-  // STEP 1: after 3.2s → hide image, show GIF clearly
+  // STEP 1: after 3.2s → switch image → GIF
   setTimeout(() => {
     introImg.style.display = "none";
+
+    // NOW show GIF (THIS is the fix)
+    gifOverlay.style.display = "flex";
+
+    sbrGif.src = "";
+    sbrGif.src = "sbr.gif?reload=" + Date.now();
   }, 3200);
 
-  // STEP 2: after 4.2s → remove start screen (1s after GIF begins)
+  // STEP 2: after 4.2s → hide start screen (1s after GIF starts)
   setTimeout(() => {
     startScreen.style.display = "none";
   }, 4200);
 
-  // STEP 3: after 9s → start actual game
+  // STEP 3: after 9s → start game
   setTimeout(() => {
     gifOverlay.style.display = "none";
     gameStarted = true;
   }, 9000);
 });
-
 
   
 resetBtn.addEventListener("click", () => {
