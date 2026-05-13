@@ -998,11 +998,17 @@ function triggerCMoonEffect() {
   const oldX = ball.speedX;
   const oldY = ball.speedY;
 
-  ball.speedX = -oldY * dir;
-  ball.speedY = oldX * dir;
+  // rotate velocity vector
+const newX = -oldY * dir;
+const newY = oldX * dir;
 
-  // EXTRA gravity kick
-  ball.speedY *= 1.4;
+// smooth transition instead of instant snap
+ball.speedX = ball.speedX * 0.3 + newX * 0.7;
+ball.speedY = ball.speedY * 0.3 + newY * 0.7;
+
+// gravity distortion burst
+ball.speedY += 2.5 * dir;
+ball.speedX *= 1.1;
 }
 function activateCMoon() {
   const now = performance.now();
