@@ -423,6 +423,25 @@
   }
 }
 
+/* TRIANGLE REWIND FIELD */
+#triangleField {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 90000;
+  overflow: hidden;
+}
+
+.triangle {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 10px solid violet;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 6px violet);
+}
 .bitesRing {
   width: 140px;
   height: 140px;
@@ -445,6 +464,26 @@
   box-shadow:
     0 0 40px cyan,
     0 0 100px deepskyblue;
+}
+
+/* EXTRA C-MOON GRAVITY EDGE VFX */
+.cmoon-edge-vfx {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99998;
+  background:
+    radial-gradient(circle at 50% 50%,
+      rgba(0,255,255,0.15),
+      rgba(0,100,255,0.25),
+      rgba(0,0,0,0.9));
+  animation: cmoonEdgePulse 1.2s ease-out;
+}
+
+@keyframes cmoonEdgePulse {
+  0% { opacity: 0; transform: scale(1); }
+  40% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.05); }
 }
 
 .arrow {
@@ -619,6 +658,7 @@
 <div id="blueOverlay"></div>
 <div id="cmoonVisual"></div>
 <div id="standFx"></div>
+<div id="triangleField"></div>
 
 <div id="cooldownUI" class="hidden-ui">
   
@@ -749,6 +789,51 @@ function easeInOutCubic(t) {
 // VFX
 // ======================
 
+const triangleField = document.getElementById("triangleField");
+let triangleSpeed = 2;
+let triangleInterval;
+let triangleActive = false;
+
+function spawnTriangleRow() {
+  const count = 40;
+
+  for (let i = 0; i < count; i++) {
+    const tri = document.createElement("div");
+    tri.className = "triangle";
+
+    tri.style.left = (window.innerWidth - (i * 25)) + "px";
+    tri.style.top = (window.innerHeight / 2 + (Math.random() * 60 - 30)) + "px";
+
+    triangleField.appendChild(tri);
+
+    animateTriangle(tri);
+  }
+}
+
+function animateTriangle(tri) {
+  let x = parseFloat(tri.style.left);
+
+  function move() {
+    if (!triangleActive) {
+      tri.remove();
+      return;
+    }
+
+    x -= triangleSpeed;
+
+    tri.style.left = x + "px";
+
+    if (x < -50) {
+      tri.remove();
+      return;
+    }
+
+    requestAnimationFrame(move);
+  }
+
+  move();
+}
+
 function createRing(type, arrowClass) {
   const fx = document.getElementById("standFx");
 
@@ -829,7 +914,7 @@ function updateCooldown(now, lastUsed, cooldown, fillId, textId) {
 
   if (elapsed >= cooldown) {
     fill.style.width = "100%";
-    text.textContent = "READY";
+    text.textContent = `READY, PRESS ${getKeybind(text.parentElement.querySelector(".cooldownTitle").textContent)} TO ACTIVATE`;
     return;
   }
 
@@ -951,11 +1036,15 @@ function activateBites() {
 
   bitesLastUsed = now;
 
-  createRing("bitesRing", "arrowPurple");
   flashScreen("flashBites");
 
   bitesActive = true;
   rewinding = true;
+
+  triangleActive = true;
+  triangleSpeed = Math.min(12, Math.abs(ball.speedX) + Math.abs(ball.speedY));
+
+  spawnTriangleRow();
 
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
@@ -963,10 +1052,19 @@ function activateBites() {
   document.body.classList.add("bites-effect");
 
   rewindStartTime = performance.now();
-
   rewindStartIndex = 0;
 
+  // SPEED SYNC LOOP
+  const sync = setInterval(() => {
+    triangleSpeed = Math.max(2, Math.abs(ball.speedX) + Math.abs(ball.speedY));
+  }, 100);
+
   setTimeout(() => {
+    clearInterval(sync);
+
+    triangleActive = false;
+    triangleField.innerHTML = "";
+
     document.body.classList.remove("bites-effect");
 
     const newAngle = randomAngle();
@@ -989,6 +1087,12 @@ function triggerCMoonEffect() {
 
   showCMoonVisual(dir);
 
+  // NEW EDGE VFX
+  const edge = document.createElement("div");
+  edge.className = "cmoon-edge-vfx";
+  document.body.appendChild(edge);
+  setTimeout(() => edge.remove(), 1200);
+
   document.body.classList.add("cmoon-gravity");
 
   setTimeout(() => {
@@ -998,17 +1102,14 @@ function triggerCMoonEffect() {
   const oldX = ball.speedX;
   const oldY = ball.speedY;
 
-  // rotate velocity vector
-const newX = -oldY * dir;
-const newY = oldX * dir;
+  const newX = -oldY * dir;
+  const newY = oldX * dir;
 
-// smooth transition instead of instant snap
-ball.speedX = ball.speedX * 0.3 + newX * 0.7;
-ball.speedY = ball.speedY * 0.3 + newY * 0.7;
+  ball.speedX = ball.speedX * 0.3 + newX * 0.7;
+  ball.speedY = ball.speedY * 0.3 + newY * 0.7;
 
-// gravity distortion burst
-ball.speedY += 2.5 * dir;
-ball.speedX *= 1.1;
+  ball.speedY += 2.5 * dir;
+  ball.speedX *= 1.1;
 }
 function activateCMoon() {
   const now = performance.now();
@@ -1315,7 +1416,13 @@ document.getElementById("cooldownUI").classList.add("hidden-ui");
   // history (ONLY ONCE)
   ballHistory.push({ x: ball.x, y: ball.y });
 }
-
+  
+function getKeybind(power) {
+  if (power === "ZA WARUDO") return "Z";
+  if (power === "BITES THE DUST") return "X";
+  if (power === "C-MOON") return "C";
+  return "?";
+}
 // =====================
 // BITES REWIND
 // =====================
