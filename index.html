@@ -17,8 +17,12 @@
       justify-content: center;
       min-height: 100vh;
       transition: filter 0.3s ease;
+        overflow: hidden;
     }
 
+    html, body {
+  overflow: hidden;
+}
     h1 { margin-bottom: 10px; }
 
     
@@ -538,28 +542,28 @@
   opacity: 0.7;
 }
 .cmoon-gravity {
-  animation: cmoonGravity 1.2s ease-out;
+  animation: cmoonWarp 1.2s ease-out;
 }
 
-@keyframes cmoonGravity {
+@keyframes cmoonWarp {
   0% {
+    filter: brightness(1) contrast(1);
     transform: scale(1);
-    filter: brightness(1);
   }
 
   30% {
-    transform: scale(1.03);
-    filter: brightness(1.4) contrast(1.2);
+    filter: brightness(1.6) contrast(1.4) hue-rotate(30deg);
+    transform: scale(1.02) rotate(0.3deg);
   }
 
-  70% {
-    transform: scale(0.98);
-    filter: brightness(0.7) hue-rotate(40deg);
+  60% {
+    filter: brightness(0.7) contrast(1.8) hue-rotate(120deg);
+    transform: scale(0.98) rotate(-0.3deg);
   }
 
   100% {
-    transform: scale(1);
     filter: brightness(1);
+    transform: scale(1);
   }
 }
 
@@ -913,13 +917,27 @@ function showCMoonVisual(dir) {
   el.className = "";
   el.style.opacity = "1";
 
+  // reset transform so animation stacks cleanly
+  el.style.transform = "translate(-50%, -50%) scale(0.6)";
+
   void el.offsetWidth;
 
   el.classList.add(dir === 1 ? "spin-right" : "spin-left");
 
+  // 🔥 add pulse pop
+  el.animate([
+    { transform: "translate(-50%, -50%) scale(0.5)", opacity: 0 },
+    { transform: "translate(-50%, -50%) scale(1.4)", opacity: 1 },
+    { transform: "translate(-50%, -50%) scale(1)", opacity: 0.8 },
+    { transform: "translate(-50%, -50%) scale(2)", opacity: 0 }
+  ], {
+    duration: 700,
+    easing: "ease-out"
+  });
+
   setTimeout(() => {
     el.style.opacity = "0";
-  }, 600);
+  }, 700);
 }
   
 // =====================
