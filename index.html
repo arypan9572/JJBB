@@ -831,11 +831,11 @@ startBtn.addEventListener("click", async () => {
     startScreen.style.display = "none";
   }, 4200);
 
-  // STEP 3: after 9s → start game
-  setTimeout(() => {
-    gifOverlay.style.display = "none";
-    gameStarted = true;
-  }, 9000);
+ // STEP 3: GIF lasts 4.7s after it starts (3.2s + 4.7s = 7.9s total)
+setTimeout(() => {
+  gifOverlay.style.display = "none";
+  gameStarted = true;
+}, 3200 + 4700);
 });
 
   
