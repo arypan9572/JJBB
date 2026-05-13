@@ -103,6 +103,37 @@
   backdrop-filter: blur(0px);
 }
 
+#cmoonVisual {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 140px;
+  height: 140px;
+  transform: translate(-50%, -50%);
+  background: url("cmoon.png") center/contain no-repeat;
+  opacity: 0;
+  z-index: 99999;
+  pointer-events: none;
+}
+
+.spin-left {
+  animation: spinL 0.6s linear;
+}
+
+.spin-right {
+  animation: spinR 0.6s linear;
+}
+
+@keyframes spinL {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
+@keyframes spinR {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
 .blue-cinematic {
   animation: blueTimeStop 1.8s forwards;
 }
@@ -327,6 +358,7 @@
   <audio id="sbrSound" src="sbr.mp3"></audio>
 
 <div id="blueOverlay"></div>
+<div id="cmoonVisual"></div>
 
 <div id="gifOverlay">
   <img id="sbrGif" src="sbr.gif" />
@@ -342,6 +374,13 @@ const zaWarudoSound = document.getElementById("zaWarudoSound");
 const tomattaSound = document.getElementById("tomattaSound");
 const timeResumeSound = document.getElementById("timeResumeSound");
 const bitesSound = document.getElementById("bitesSound");
+const cMoonAudios = [
+  "cmoon.mp3",
+  "cmoon2.mp3",
+  "cmvl.mp3",
+  "cmvl2.mp3",
+  "cmvl3.mp3"
+];
 
 const gifOverlay = document.getElementById("gifOverlay");
 const sbrGif = document.getElementById("sbrGif");
@@ -360,6 +399,7 @@ const startBtn = document.getElementById("startBtn");
 let timeStopped = false;
 let bitesActive = false;
 let rewinding = false;
+let cMoonActive = false;
 let rewindStartIndex = 0;
 
 
@@ -386,7 +426,7 @@ function easeInOutCubic(t) {
 // ZA WARUDO
 // =====================
 function activateZaWarudo() {
-  if (timeStopped || bitesActive) return;
+  if (timeStopped || bitesActive || cMoonActive) return;
 
   timeStopped = true;
   document.body.classList.add("za-warudo");
@@ -432,11 +472,26 @@ function activateZaWarudo() {
   }, 8000);
 }
 
+function showCMoonVisual(dir) {
+  const el = document.getElementById("cmoonVisual");
+
+  el.className = "";
+  el.style.opacity = "1";
+
+  void el.offsetWidth;
+
+  el.classList.add(dir === 1 ? "spin-right" : "spin-left");
+
+  setTimeout(() => {
+    el.style.opacity = "0";
+  }, 600);
+}
+  
 // =====================
 // BITES THE DUST (YOUR VERSION RESTORD)
 // =====================
 function activateBites() {
-  if (bitesActive || timeStopped) return;
+  if (bitesActive || timeStopped || cMoonActive) return;
 
   bitesActive = true;
   rewinding = true;
@@ -471,6 +526,44 @@ rewindStartIndex = 0; // go all the way back to spawn
     ballHistory = [];
     highlightPoints = [];
   }, rewindDuration);
+}
+  
+function triggerCMoonEffect() {
+  const dir = Math.random() < 0.5 ? -1 : 1;
+
+  showCMoonVisual(dir);
+
+  // rotate ball trajectory by 90 degrees
+  const oldX = ball.speedX;
+  const oldY = ball.speedY;
+
+  ball.speedX = -oldY * dir;
+  ball.speedY = oldX * dir;
+}
+
+function activateCMoon() {
+  if (timeStopped || bitesActive || cMoonActive) return;
+
+  cMoonActive = true;
+
+  const src = cMoonAudios[Math.floor(Math.random() * cMoonAudios.length)];
+  const audio = new Audio(src);
+
+  audio.addEventListener("loadedmetadata", () => {
+    let duration = audio.duration;
+
+    if (isNaN(duration) || !isFinite(duration)) {
+      duration = 4; // fallback safety
+    }
+
+    const midpoint = (duration / 2) * 1000;
+
+    audio.play().catch(() => {});
+
+    setTimeout(() => {
+      triggerCMoonEffect();
+    }, midpoint);
+  });
 }
 
 // =====================
@@ -710,7 +803,7 @@ function moveBall() {
   // history (ONLY ONCE)
   ballHistory.push({ x: ball.x, y: ball.y });
 }
-  
+
 // =====================
 // BITES REWIND
 // =====================
@@ -747,6 +840,7 @@ document.addEventListener("keydown", e => {
   if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
   if (e.key.toLowerCase() === "z") activateZaWarudo();
   if (e.key.toLowerCase() === "x") activateBites();
+  if (e.key.toLowerCase() === "c") activateCMoon();
 });
 
 document.addEventListener("keyup", e => {
