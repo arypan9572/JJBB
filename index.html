@@ -141,12 +141,14 @@
   position: fixed;
   width: 250px;
   height: auto;
+
   right: -300px;
-  bottom: -300px;
+  bottom: 20px;   /* stays aligned to bottom */
+  
   z-index: 60000;
   pointer-events: none;
 
-  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: right 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 #gifOverlay {
@@ -796,47 +798,47 @@ draw();
   
 startBtn.addEventListener("click", async () => {
 
-  blueOverlay.classList.add("blue-cinematic");
-  startScreen.style.display = "none";
-
   const introImg = document.getElementById("introImg");
 
-  // start OFF SCREEN
+  // show image (start off-screen)
+  introImg.style.display = "block";
   introImg.style.right = "-300px";
-  introImg.style.bottom = "-300px";
 
-  // force refresh
+  // force reflow
   introImg.offsetHeight;
 
-  // animate INTO bottom-right corner
+  // slide into view
   introImg.style.right = "20px";
-  introImg.style.bottom = "20px";
 
-  // after 3.2 seconds → remove image + start GIF
+  // start GIF immediately (but still hidden behind start screen)
+  gifOverlay.style.display = "flex";
+
+  sbrGif.src = "";
+  sbrGif.src = "sbr.gif?reload=" + Date.now();
+
+  // play sound
+  try {
+    sbrSound.currentTime = 0;
+    sbrSound.play();
+  } catch (e) {}
+
+  // AFTER 1 SECOND → remove start screen (this is your request)
   setTimeout(() => {
+    startScreen.style.display = "none";
+  }, 1000);
 
+  // AFTER 3.2 SECONDS → remove image
+  setTimeout(() => {
     introImg.style.display = "none";
-
-    gifOverlay.style.display = "flex";
-
-    // restart gif properly
-    sbrGif.src = "";
-    sbrGif.src = "sbr.gif?reload=" + Date.now();
-
-    // play sound
-    try {
-      sbrSound.currentTime = 0;
-      sbrSound.play();
-    } catch (e) {}
-
-    // hide after 9 seconds
-    setTimeout(() => {
-      gifOverlay.style.display = "none";
-      blueOverlay.style.display = "none";
-      gameStarted = true;
-    }, 9000);
-
   }, 3200);
+
+  // AFTER 9 SECONDS → start game
+  setTimeout(() => {
+    gifOverlay.style.display = "none";
+    blueOverlay.classList.remove("blue-cinematic");
+    gameStarted = true;
+  }, 9000);
+
 });
 
 
