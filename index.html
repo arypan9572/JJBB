@@ -375,6 +375,35 @@
     0 0 80px orange;
 }
 
+.zaCircle {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border: 3px solid gold;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: circleTime 1.2s ease-out forwards;
+}
+
+@keyframes circleTime {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.5) rotate(720deg);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(2.5) rotate(1440deg);
+    opacity: 0;
+  }
+}
+
 .bitesRing {
   width: 140px;
   height: 140px;
@@ -687,9 +716,13 @@ function createRing(type, arrowClass) {
 
   fx.appendChild(ring);
 
+ if (type === "zaRing") {
+  const circle = document.createElement("div");
+  circle.className = "zaCircle";
+  ring.appendChild(circle);
+
   for (let i = 0; i < 4; i++) {
     const arrow = document.createElement("div");
-
     arrow.className = `arrow ${arrowClass}`;
 
     arrow.style.transform =
@@ -697,6 +730,8 @@ function createRing(type, arrowClass) {
 
     ring.appendChild(arrow);
   }
+}
+
 
   setTimeout(() => {
     ring.remove();
@@ -1109,12 +1144,10 @@ function drawBall() {
 
     ctx.beginPath();
 
-    ctx.arc(
-      p.x,
-      p.y,
-
-      ball.radius * (i / ball.trail.length),
-
+  ctx.arc(
+  p.x,
+  p.y,
+  ball.radius,
       0,
       Math.PI * 2
     );
@@ -1136,11 +1169,7 @@ function drawBall() {
     Math.PI * 2
   );
 
-  ctx.fillStyle = "lime";
-
-  // glow effect
-  ctx.shadowBlur = 20;
-  ctx.shadowColor = "lime";
+ ctx.fillStyle = "orange";
 
   ctx.fill();
 
@@ -1322,7 +1351,9 @@ if (rewinding) {
   drawBricks();
   drawScore();
   drawLives();
+  if (gameStarted) {
   updateCooldowns();
+}
 
   if (!gameOver) {
     requestAnimationFrame(draw);
