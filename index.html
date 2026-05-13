@@ -797,20 +797,25 @@ draw();
 
   
 startBtn.addEventListener("click", async () => {
-
   const introImg = document.getElementById("introImg");
 
-  // show image (start off-screen)
+  // reset states
+  gameStarted = false;
+
+  // show image OFF SCREEN first
   introImg.style.display = "block";
   introImg.style.right = "-300px";
 
-  // force reflow
+  // force reflow so animation triggers
   introImg.offsetHeight;
 
-  // slide into view
+  // slide it in
   introImg.style.right = "20px";
 
-  // start GIF immediately (but still hidden behind start screen)
+  // keep start screen visible initially
+  startScreen.style.display = "flex";
+
+  // start GIF hidden behind everything (but running)
   gifOverlay.style.display = "flex";
 
   sbrGif.src = "";
@@ -819,26 +824,24 @@ startBtn.addEventListener("click", async () => {
   // play sound
   try {
     sbrSound.currentTime = 0;
-    sbrSound.play();
+    await sbrSound.play();
   } catch (e) {}
 
-  // AFTER 1 SECOND → remove start screen (this is your request)
-  setTimeout(() => {
-    startScreen.style.display = "none";
-  }, 1000);
-
-  // AFTER 3.2 SECONDS → remove image
+  // STEP 1: after 3.2s → hide image, show GIF clearly
   setTimeout(() => {
     introImg.style.display = "none";
   }, 3200);
 
-  // AFTER 9 SECONDS → start game
+  // STEP 2: after 4.2s → remove start screen (1s after GIF begins)
+  setTimeout(() => {
+    startScreen.style.display = "none";
+  }, 4200);
+
+  // STEP 3: after 9s → start actual game
   setTimeout(() => {
     gifOverlay.style.display = "none";
-    blueOverlay.classList.remove("blue-cinematic");
     gameStarted = true;
   }, 9000);
-
 });
 
 
