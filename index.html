@@ -829,6 +829,7 @@ function easeInOutCubic(t) {
 const triangleField = document.getElementById("triangleField");
 let triangleSpeed = 2;
 let triangleInterval;
+let bitesStartTime = 0;
 let triangleActive = false;
 
 
@@ -843,6 +844,10 @@ function initTriangles() {
     tri.className = "triangle";
 
     resetTriangle(tri, i * 25);
+
+    tri.style.position = "absolute";
+    tri.style.left = "9999px";
+    tri.style.top = "9999px";
 
     triangleField.appendChild(tri);
     triangles.push(tri);
@@ -868,7 +873,20 @@ function updateTriangles() {
     const tri = triangles[i];
 
     // move left
-    tri.x -= triangleSpeed * 2;
+    const elapsed = performance.now() - bitesStartTime;
+const progress = Math.min(elapsed / rewindDuration, 1);
+
+let speed;
+
+if (progress < 0.5) {
+  speed = 1 + progress * 3; // gets faster
+} else {
+  speed = 2 - (progress - 0.5) * 4; // slows down
+}
+
+if (progress > 0.95) speed = 0;
+
+tri.x -= triangleSpeed * speed;
 
     // little wave movement
     const wave =
@@ -885,8 +903,10 @@ function updateTriangles() {
     tri.style.top = tri.y + "px";
 
     // tail fade effect
-    tri.style.opacity =
-      1 - (i / triangles.length) * 0.8;
+    const fadeIn = Math.min(progress * 3, 1);
+const fadeOut = 1 - progress;
+
+tri.style.opacity = fadeIn * fadeOut;
   }
 
   requestAnimationFrame(updateTriangles);
@@ -1103,6 +1123,7 @@ function activateBites() {
   triangleSpeed = Math.min(12, Math.abs(ball.speedX) + Math.abs(ball.speedY));
 
   triangleActive = true;
+  bitesStartTime = performance.now();
   triangleSpeed = Math.min(18, Math.abs(ball.speedX) + Math.abs(ball.speedY));
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
@@ -1154,7 +1175,7 @@ setTimeout(() => {
   
   const dir = Math.random() < 0.5 ? -1 : 1;
 
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5.5; i++) {
 
   setTimeout(() => {
 
@@ -1203,7 +1224,7 @@ setTimeout(() => {
   const edge = document.createElement("div");
   edge.className = "cmoon-edge-vfx";
   document.body.appendChild(edge);
-  setTimeout(() => edge.remove(), 1200);
+  setTimeout(() => edge.remove(), 2200);
 
   document.body.classList.add("cmoon-gravity");
 
@@ -1222,6 +1243,11 @@ setTimeout(() => {
 
   ball.speedY += 2.5 * dir;
   ball.speedX *= 1.1;
+  document.body.style.filter = "brightness(0.6) contrast(1.6) hue-rotate(120deg)";
+
+setTimeout(() => {
+  document.body.style.filter = "";
+}, 2000);
 }
 function activateCMoon() {
   const now = performance.now();
