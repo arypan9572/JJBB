@@ -115,6 +115,94 @@
   z-index: 9999;
 }
 
+  #pauseScreen {
+  position: fixed;
+  inset: 0;
+
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  background:
+    radial-gradient(circle at center,
+      rgba(0,120,255,0.15),
+      rgba(0,0,0,0.92));
+
+  backdrop-filter: blur(10px);
+
+  z-index: 200000;
+
+  animation: pauseFade 0.35s ease;
+}
+
+#pauseTitle {
+  font-size: 90px;
+  font-weight: bold;
+
+  color: white;
+
+  text-shadow:
+    0 0 20px cyan,
+    0 0 40px deepskyblue,
+    0 0 80px blue;
+
+  animation: pulsePause 2s infinite ease-in-out;
+}
+
+.pauseSub {
+  margin-top: 10px;
+  font-size: 22px;
+  opacity: 0.8;
+  letter-spacing: 3px;
+}
+
+.pauseControls {
+  margin-top: 35px;
+
+  padding: 20px 30px;
+
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+
+  background: rgba(255,255,255,0.05);
+
+  text-align: center;
+
+  box-shadow:
+    0 0 30px rgba(0,180,255,0.2);
+}
+
+.pauseControls p {
+  margin: 8px 0;
+  font-size: 18px;
+}
+
+@keyframes pauseFade {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(10px);
+  }
+}
+
+@keyframes pulsePause {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.04);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
 #blueOverlay {
   position: fixed;
   inset: 0;
@@ -687,6 +775,21 @@ will-change: transform, opacity, filter;
   <button id="resetBtn">RESET</button>
 </div>
 
+  <div id="pauseScreen">
+  <div id="pauseTitle">⏸ PAUSED</div>
+
+  <div class="pauseSub">
+    Time has stopped.
+  </div>
+
+  <div class="pauseControls">
+    <p>ESC = Resume</p>
+    <p>Z = ZA WARUDO</p>
+    <p>X = BITES THE DUST</p>
+    <p>C = C-MOON</p>
+  </div>
+</div>
+
   <audio id="zaWarudoSound" src="zawarudo.mp3"></audio>
   <audio id="tomattaSound" src="tomatta.mp3"></audio>
   <audio id="timeResumeSound" src="time resumes.mp3"></audio>
@@ -777,11 +880,17 @@ const gifOverlay = document.getElementById("gifOverlay");
 const sbrGif = document.getElementById("sbrGif");
 const sbrSound = document.getElementById("sbrSound");
 const blueOverlay = document.getElementById("blueOverlay");
+const pauseScreen = document.getElementById("pauseScreen");
 
+let paused = false;
+
+let pauseStartTime = 0;
+let totalPausedTime = 0;
   
 const zaText = document.getElementById("zaText");
 const gameOverScreen = document.getElementById("gameOverScreen");
 const resetBtn = document.getElementById("resetBtn");
+
   
 let gameStarted = false;
 const startScreen = document.getElementById("startScreen");
@@ -958,7 +1067,16 @@ function flashScreen(className) {
 // ======================
 
 function updateCooldowns() {
-  const now = performance.now();
+
+  let now = performance.now();
+
+  // freeze time during pause
+  if (paused) {
+    now = pauseStartTime;
+  }
+
+  // remove paused duration
+  now -= totalPausedTime;
 
   updateCooldown(
     now,
@@ -1008,7 +1126,8 @@ function updateCooldown(now, lastUsed, cooldown, fillId, textId) {
 // ZA WARUDO
 // =====================
 function activateZaWarudo() {
-  const now = performance.now();
+  const now =
+  performance.now() - totalPausedTime;
 
   if (now - zaLastUsed < zaCooldown) return;
   if (timeStopped || bitesActive || cMoonActive) return;
@@ -1108,7 +1227,8 @@ function showCMoonVisual(dir) {
 // BITES THE DUST (YOUR VERSION RESTORD)
 // =====================
 function activateBites() {
-  const now = performance.now();
+  const now =
+  performance.now() - totalPausedTime;
 
   if (now - bitesLastUsed < bitesCooldown) return;
   if (bitesActive || timeStopped || cMoonActive) return;
@@ -1250,7 +1370,8 @@ setTimeout(() => {
 }, 2000);
 }
 function activateCMoon() {
-  const now = performance.now();
+  const now =
+  performance.now() - totalPausedTime;
 
   if (now - cmoonLastUsed < cmoonCooldown) return;
   if (timeStopped || bitesActive || cMoonActive) return;
@@ -1392,6 +1513,8 @@ ctx.globalAlpha = 1.0;
 }
 
 function brickCollision() {
+
+  if (paused) return;
   if (timeStopped) return;
 
   for (let r = 0; r < brickInfo.rows; r++) {
@@ -1400,12 +1523,14 @@ function brickCollision() {
 
       if (!brick.visible) continue;
 
-      if (
-        ball.x > brick.x &&
-        ball.x < brick.x + brickInfo.width &&
-        ball.y + ball.radius > brick.y &&
-        ball.y - ball.radius < brick.y + brickInfo.height
-      ) {
+      const hitboxPadding = bitesActive ? 18 : 0;
+
+if (
+  ball.x + hitboxPadding > brick.x &&
+  ball.x - hitboxPadding < brick.x + brickInfo.width &&
+  ball.y + ball.radius + hitboxPadding > brick.y &&
+  ball.y - ball.radius - hitboxPadding < brick.y + brickInfo.height
+) {
         brick.visible = false;
         score++;
 
@@ -1481,7 +1606,7 @@ ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
 
 const PADDLE_MIN = 50;
-const PADDLE_SHRINK = 0.02;
+const PADDLE_SHRINK = 0.0025;
 
 function drawScore() {
   ctx.fillStyle = "white";
@@ -1497,6 +1622,9 @@ function drawLives() {
 // MOVEMENT
 // =====================
 function movePaddle() {
+
+  if (paused) return;
+  
   paddle.x += paddle.dx;
 
   paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
@@ -1507,6 +1635,9 @@ function movePaddle() {
 }
 
 function moveBall() {
+
+  if (paused) return;
+  
   if (timeStopped || bitesActive) return;
 
   ball.x += ball.speedX;
@@ -1605,6 +1736,50 @@ function rewindBall() {
   highlightPoints = highlightPoints.filter(h => h < i);
 }
 
+function togglePause() {
+
+  // don't pause if game hasn't started
+  // or if game over happened
+  if (!gameStarted || gameOver) return;
+
+  // flip pause state
+  paused = !paused;
+
+// JUST PAUSED
+if (paused) {
+  pauseStartTime = performance.now();
+}
+
+// JUST RESUMED
+else {
+
+  totalPausedTime +=
+    performance.now() - pauseStartTime;
+}
+
+  // IF GAME IS NOW PAUSED
+  if (paused) {
+
+    // show pause menu
+    pauseScreen.style.display = "flex";
+
+    // blur/darken game
+    canvas.style.filter =
+      "blur(3px) brightness(0.6)";
+
+  }
+
+  // IF GAME IS RESUMED
+  else {
+
+    // hide pause menu
+    pauseScreen.style.display = "none";
+
+    // remove blur
+    canvas.style.filter = "";
+  }
+}
+
 // =====================
 // INPUT
 // =====================
@@ -1612,8 +1787,15 @@ document.addEventListener("keydown", e => {
 
   // don't allow powers before game starts
   // or after game over
-  if (!gameStarted || gameOver) return;
+  if (!gameStarted || gameOver || paused) {
 
+  // still allow ESC while paused
+  if (e.key === "Escape") {
+    togglePause();
+  }
+
+  return;
+}
   if (e.key === "ArrowRight") {
     paddle.dx = paddle.speed;
   }
@@ -1633,6 +1815,10 @@ document.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "c") {
     activateCMoon();
   }
+
+  if (e.key === "Escape") {
+  togglePause();
+}
 
 });
 
