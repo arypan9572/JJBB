@@ -892,7 +892,7 @@ function updateTriangles() {
   requestAnimationFrame(updateTriangles);
 }
 
-function (type, arrowClass) {
+function createStandRing(type, arrowClass) {
   const fx = document.getElementById("standFx");
 
   const ring = document.createElement("div");
@@ -994,7 +994,7 @@ function activateZaWarudo() {
 
   zaLastUsed = now;
 
-  ("zaRing", "arrowGold");
+  createStandRing("zaRing", "arrowGold");
   canvas.animate([
   { transform: "translate(0px,0px)" },
   { transform: "translate(-8px,4px)" },
@@ -1231,7 +1231,7 @@ function activateCMoon() {
 
   cmoonLastUsed = now;
 
-  ("cmoonRing", "arrowBlue");
+  createStandRing("cmoonRing", "arrowBlue");
   flashScreen("flashCMoon");
 
   cMoonActive = true;
