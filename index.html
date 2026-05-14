@@ -659,6 +659,7 @@ will-change: transform, opacity, filter;
     <p>← → Move paddle</p>
     <p>Z = ZA WARUDO (slow time)</p>
     <p>X = BITES THE DUST (erase mode)</p>
+    <p>C = C-MOON (gravity shift)</p>
   </div>
 
   <div class="panel">
@@ -678,8 +679,8 @@ will-change: transform, opacity, filter;
   <div id="zaText">ZA WARUDO</div>
 
   <div class="instructions">
-    Arrow keys to move • Press Z = ZA WARUDO • Press X = BITES THE DUST
-  </div>
+← → Move paddle • Z = ZA WARUDO • X = BITES THE DUST • C = C-MOON
+</div>
 
   <div id="gameOverScreen">
   <div id="gameOverText">GAME OVER</div>
@@ -1155,8 +1156,7 @@ for (let tri of triangles) {
     ball.x = canvas.width / 2;
     ball.y = canvas.height - 50;
 
-    ball.speedX = newAngle.x;
-    ball.speedY = newAngle.y;
+    
 
     rewinding = false;
     bitesActive = false;
@@ -1409,7 +1409,7 @@ function brickCollision() {
         brick.visible = false;
         score++;
 
-        // 💥 BITES THE DUST MODE = NO BOUNCE
+        // 💥 NORMAL MODE: bounce
         if (!bitesActive) {
           ball.speedY *= -1;
 
@@ -1419,11 +1419,19 @@ function brickCollision() {
             ball.y = brick.y - ball.radius;
           }
         }
+
+        // 💥 BITES THE DUST MODE: just destroy and KEEP GOING
+        else {
+          // no bounce, no position correction
+          // optional: slight speed boost for “cutting through”
+          ball.speedX *= 1.01;
+          ball.speedY *= 1.01;
+        }
       }
     }
   }
 
-  // check win condition
+  // win check
   let allGone = true;
   for (let r = 0; r < brickInfo.rows; r++) {
     for (let c = 0; c < brickInfo.cols; c++) {
@@ -1469,8 +1477,11 @@ function drawBall() {
 // =====================
 function drawPaddle() {
   ctx.fillStyle = "deepskyblue";
-  ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 }
+
+const PADDLE_MIN = 50;
+const PADDLE_SHRINK = 0.02;
 
 function drawScore() {
   ctx.fillStyle = "white";
@@ -1487,7 +1498,12 @@ function drawLives() {
 // =====================
 function movePaddle() {
   paddle.x += paddle.dx;
+
   paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
+
+  if (paddle.width > PADDLE_MIN) {
+    paddle.width -= PADDLE_SHRINK;
+  }
 }
 
 function moveBall() {
@@ -1497,8 +1513,8 @@ function moveBall() {
   ball.y += ball.speedY;
 
   
-  ball.speedX *= 1.0005;
-  ball.speedY *= 1.0005;
+  ball.speedX *= 1.00025;
+ball.speedY *= 1.00025;
 
   if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0)
     ball.speedX *= -1;
