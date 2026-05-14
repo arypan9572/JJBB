@@ -18,6 +18,7 @@
       min-height: 100vh;
       transition: filter 0.3s ease;
         overflow: hidden;
+      position: relative;
     }
 
     html, body {
@@ -128,6 +129,9 @@
   z-index: 40000;
 
   backdrop-filter: blur(0px);
+  overflow: hidden;
+transform: translateZ(0);
+will-change: transform, opacity, filter;
 }
 
 #cmoonVisual {
@@ -431,18 +435,21 @@
 
 .triangle {
   position: absolute;
+
   width: 0;
   height: 0;
 
-  /* equilateral triangle */
-  border-left: 14px solid transparent;
-  border-right: 14px solid transparent;
-  border-bottom: 24px solid violet;
+  border-top: 14px solid transparent;
+  border-bottom: 14px solid transparent;
+  border-right: 24px solid violet;
 
-  opacity: 0.75;
-  filter: drop-shadow(0 0 6px violet);
+  opacity: 0.9;
 
-  transform: scale(2.5); /* 🔥 your 2.5x size request */
+  filter:
+    drop-shadow(0 0 8px violet)
+    drop-shadow(0 0 18px hotpink);
+
+  transform: translateY(-50%);
 }
 .bitesRing {
   width: 140px;
@@ -609,7 +616,35 @@
 }
 
 
+.cmoon-distort {
+  animation: cmoonDistort 1.6s ease-out;
+}
 
+@keyframes cmoonDistort {
+
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+
+  20% {
+    transform: scale(1.02) rotate(0.5deg);
+    filter: brightness(1.6)
+            hue-rotate(40deg);
+  }
+
+  50% {
+    transform: scale(0.98) rotate(-0.5deg);
+    filter: brightness(0.7)
+            contrast(1.7)
+            hue-rotate(120deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
 
 
   </style>
@@ -820,25 +855,44 @@ function resetTriangle(tri, offsetX = window.innerWidth) {
 }
 
 function updateTriangles() {
-  if (!triangleActive) return;
 
-  for (let tri of triangles) {
-    tri.x -= triangleSpeed;
+  if (!triangleActive) {
+    requestAnimationFrame(updateTriangles);
+    return;
+  }
 
-    // wrap around → infinite effect
-    if (tri.x < -50) {
-      tri.x = window.innerWidth + Math.random() * 300;
-      tri.y = window.innerHeight / 2 + (Math.random() * 120 - 60);
+  const centerY = window.innerHeight / 2;
+
+  for (let i = 0; i < triangles.length; i++) {
+
+    const tri = triangles[i];
+
+    // move left
+    tri.x -= triangleSpeed * 2;
+
+    // little wave movement
+    const wave =
+      Math.sin((performance.now() * 0.004) + i * 0.2) * 8;
+
+    tri.y = centerY + wave;
+
+    // if off screen → reset to right side
+    if (tri.x < -60) {
+      tri.x = window.innerWidth + (i * 30);
     }
 
     tri.style.left = tri.x + "px";
     tri.style.top = tri.y + "px";
+
+    // tail fade effect
+    tri.style.opacity =
+      1 - (i / triangles.length) * 0.8;
   }
 
   requestAnimationFrame(updateTriangles);
 }
 
-function createRing(type, arrowClass) {
+function (type, arrowClass) {
   const fx = document.getElementById("standFx");
 
   const ring = document.createElement("div");
@@ -940,7 +994,7 @@ function activateZaWarudo() {
 
   zaLastUsed = now;
 
-  createRing("zaRing", "arrowGold");
+  ("zaRing", "arrowGold");
   canvas.animate([
   { transform: "translate(0px,0px)" },
   { transform: "translate(-8px,4px)" },
@@ -1091,7 +1145,57 @@ for (let tri of triangles) {
 }
   
 function triggerCMoonEffect() {
+
+  document.body.classList.add("cmoon-distort");
+
+setTimeout(() => {
+  document.body.classList.remove("cmoon-distort");
+}, 1600);
+  
   const dir = Math.random() < 0.5 ? -1 : 1;
+
+  for (let i = 0; i < 3; i++) {
+
+  setTimeout(() => {
+
+    const ripple = document.createElement("div");
+
+    ripple.style.position = "fixed";
+    ripple.style.left = "50%";
+    ripple.style.top = "50%";
+    ripple.style.width = "120px";
+    ripple.style.height = "120px";
+    ripple.style.borderRadius = "50%";
+    ripple.style.border = "3px solid cyan";
+    ripple.style.transform = "translate(-50%, -50%)";
+    ripple.style.pointerEvents = "none";
+    ripple.style.zIndex = "999999";
+
+    ripple.style.boxShadow =
+      "0 0 20px cyan, 0 0 60px deepskyblue";
+
+    ripple.animate([
+      {
+        transform: "translate(-50%, -50%) scale(0.3)",
+        opacity: 1
+      },
+      {
+        transform: "translate(-50%, -50%) scale(8)",
+        opacity: 0
+      }
+    ], {
+      duration: 1200,
+      easing: "ease-out"
+    });
+
+    document.body.appendChild(ripple);
+
+    setTimeout(() => {
+      ripple.remove();
+    }, 1200);
+
+  }, i * 120);
+}
 
   showCMoonVisual(dir);
 
@@ -1127,7 +1231,7 @@ function activateCMoon() {
 
   cmoonLastUsed = now;
 
-  createRing("cmoonRing", "arrowBlue");
+  ("cmoonRing", "arrowBlue");
   flashScreen("flashCMoon");
 
   cMoonActive = true;
@@ -1463,11 +1567,31 @@ function rewindBall() {
 // INPUT
 // =====================
 document.addEventListener("keydown", e => {
-  if (e.key === "ArrowRight") paddle.dx = paddle.speed;
-  if (e.key === "ArrowLeft") paddle.dx = -paddle.speed;
-  if (e.key.toLowerCase() === "z") activateZaWarudo();
-  if (e.key.toLowerCase() === "x") activateBites();
-  if (e.key.toLowerCase() === "c") activateCMoon();
+
+  // don't allow powers before game starts
+  // or after game over
+  if (!gameStarted || gameOver) return;
+
+  if (e.key === "ArrowRight") {
+    paddle.dx = paddle.speed;
+  }
+
+  if (e.key === "ArrowLeft") {
+    paddle.dx = -paddle.speed;
+  }
+
+  if (e.key.toLowerCase() === "z") {
+    activateZaWarudo();
+  }
+
+  if (e.key.toLowerCase() === "x") {
+    activateBites();
+  }
+
+  if (e.key.toLowerCase() === "c") {
+    activateCMoon();
+  }
+
 });
 
 document.addEventListener("keyup", e => {
