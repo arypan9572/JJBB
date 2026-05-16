@@ -68,6 +68,9 @@
     box-shadow 0.4s ease;
 
   backdrop-filter: blur(6px);
+
+  will-change: transform, filter;
+transform: translateZ(0);
 }
 
     .instructions {
@@ -78,7 +81,11 @@
     }
 
     .za-warudo {
-      filter: grayscale(1) contrast(1.4) brightness(0.7);
+      filter:
+  grayscale(1)
+  contrast(1.8)
+  brightness(0.5)
+  blur(1px);
     }
 
     /* ZA WARUDO TEXT */
@@ -639,6 +646,9 @@ will-change: transform, opacity, filter;
     drop-shadow(0 0 8px violet)
     drop-shadow(0 0 18px hotpink);
 
+will-change: transform, opacity;
+transform: translateZ(0);
+  
   transform: translateY(-50%);
 }
 .bitesRing {
@@ -1009,7 +1019,7 @@ let rewindStartIndex = 0;
 // HISTORY SYSTEM (BITES)
 // =====================
 let ballHistory = [];
-const MAX_HISTORY = 3000;
+const MAX_HISTORY = 12000;
   
 let rewindDuration = 8000;
 let rewindStartTime = 0;
@@ -1074,8 +1084,7 @@ let triangleActive = false;
 
 
 let triangles = [];
-const TRIANGLE_COUNT = 100; // dense stream
-
+const TRIANGLE_COUNT = 60;
 function initTriangles() {
   triangles = [];
 
@@ -1398,7 +1407,7 @@ function activateBites() {
 
   triangleActive = true;
   bitesStartTime = performance.now();
-  triangleSpeed = Math.min(18, Math.abs(ball.speedX) + Math.abs(ball.speedY));
+ triangleSpeed = 28;
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
 
@@ -1478,7 +1487,7 @@ setTimeout(() => {
         opacity: 0
       }
     ], {
-      duration: 1200,
+      duration: 1800,
       easing: "ease-out"
     });
 
@@ -1514,7 +1523,7 @@ setTimeout(() => {
   ball.speedX = ball.speedX * 0.3 + newX * 0.7;
   ball.speedY = ball.speedY * 0.3 + newY * 0.7;
 
-  ball.speedY += 2.5 * dir;
+ ball.speedY += 4 * dir;
   ball.speedX *= 1.1;
   document.body.style.filter = "brightness(0.6) contrast(1.6) hue-rotate(120deg)";
 
@@ -1611,7 +1620,6 @@ const ball = {
   trail: []
 };
 
-ballHistory.push({ x: ball.x, y: ball.y });
 
 // =====================
 // BRICKS (RESTORED)
@@ -1718,24 +1726,56 @@ if (
 cameraImpact(5);
 
         // 💥 NORMAL MODE: bounce
-        if (!bitesActive) {
-          ball.speedY *= -1;
+        // NORMAL MODE COLLISION
+if (!bitesActive) {
 
-          canvas.animate([
-  { transform: "scale(1)" },
-  { transform: "scale(1.01)" },
-  { transform: "scale(1)" }
-], {
-  duration: 180,
-  easing: "ease-out"
-});
+  // how deep the ball entered each side
+  const overlapLeft =
+    (ball.x + ball.radius) - brick.x;
 
-          if (ball.speedY > 0) {
-            ball.y = brick.y + brickInfo.height + ball.radius;
-          } else {
-            ball.y = brick.y - ball.radius;
-          }
-        }
+  const overlapRight =
+    (brick.x + brickInfo.width) -
+    (ball.x - ball.radius);
+
+  const overlapTop =
+    (ball.y + ball.radius) - brick.y;
+
+  const overlapBottom =
+    (brick.y + brickInfo.height) -
+    (ball.y - ball.radius);
+
+  // smallest overlap tells us collision side
+  const minOverlap = Math.min(
+    overlapLeft,
+    overlapRight,
+    overlapTop,
+    overlapBottom
+  );
+
+  // SIDE HIT
+  if (
+    minOverlap === overlapLeft ||
+    minOverlap === overlapRight
+  ) {
+
+    ball.speedX *= -1;
+  }
+
+  // TOP/BOTTOM HIT
+  else {
+
+    ball.speedY *= -1;
+  }
+
+  canvas.animate([
+    { transform: "scale(1)" },
+    { transform: "scale(1.01)" },
+    { transform: "scale(1)" }
+  ], {
+    duration: 180,
+    easing: "ease-out"
+  });
+}
 
         // 💥 BITES THE DUST MODE: just destroy and KEEP GOING
         else {
@@ -1769,18 +1809,6 @@ cameraImpact(5);
 // =====================
 function drawBall() {
 
-  const gradient = ctx.createRadialGradient(
-    ball.x - 3,
-    ball.y - 3,
-    2,
-    ball.x,
-    ball.y,
-    ball.radius
-  );
-
-  gradient.addColorStop(0, "#fff5cc");
-  gradient.addColorStop(1, "#ff8c00");
-
   ctx.beginPath();
 
   ctx.arc(
@@ -1791,7 +1819,8 @@ function drawBall() {
     Math.PI * 2
   );
 
-  ctx.fillStyle = gradient;
+  // one solid color
+  ctx.fillStyle = "#ff8c00";
 
   ctx.fill();
 }
@@ -1951,28 +1980,67 @@ function getKeybind(power) {
 // BITES REWIND
 // =====================
 function rewindBall() {
+
   if (!rewinding) return;
 
-  const now = performance.now();
-  const t = Math.min((now - rewindStartTime) / rewindDuration, 1);
-  const eased = easeInOutCubic(t);
-  const reverseT = 1 - eased;
+  const elapsed =
+    performance.now() - rewindStartTime;
 
-  const range = ballHistory.length - rewindStartIndex - 1; 
-  const indexFloat = rewindStartIndex + reverseT * range;
-  const i = Math.floor(indexFloat);
-  const next = Math.min(i + 1, ballHistory.length - 1);
+  const progress =
+    Math.min(elapsed / rewindDuration, 1);
 
-  const p1 = ballHistory[i];
-  const p2 = ballHistory[next];
+  // smooth cinematic easing
+  const eased =
+    1 - Math.pow(1 - progress, 3);
 
-  if (p1 && p2) {
-    const lerp = indexFloat - i;
-    ball.x = p1.x + (p2.x - p1.x) * lerp;
-    ball.y = p1.y + (p2.y - p1.y) * lerp;
+  const index =
+    Math.floor(
+      (1 - eased) * (ballHistory.length - 1)
+    );
+
+  const nextIndex =
+    Math.min(
+      index + 1,
+      ballHistory.length - 1
+    );
+
+  const p1 = ballHistory[index];
+  const p2 = ballHistory[nextIndex];
+
+  if (!p1 || !p2) return;
+
+  // ultra smooth interpolation
+  const blend =
+    (elapsed * 0.02) % 1;
+
+  ball.x =
+    p1.x + (p2.x - p1.x) * blend;
+
+  ball.y =
+    p1.y + (p2.y - p1.y) * blend;
+
+  // rewind motion blur
+  ctx.save();
+
+  ctx.globalAlpha = 0.18;
+
+  for (let i = 1; i <= 8; i++) {
+
+    ctx.beginPath();
+
+    ctx.arc(
+      ball.x + ball.speedX * i * 0.6,
+      ball.y + ball.speedY * i * 0.6,
+      ball.radius - i * 0.4,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fillStyle = "violet";
+    ctx.fill();
   }
 
-  highlightPoints = highlightPoints.filter(h => h < i);
+  ctx.restore();
 }
 
 function togglePause() {
@@ -2080,10 +2148,41 @@ function draw() {
     requestAnimationFrame(draw);
     return;
   }
-  ctx.fillStyle = "rgba(0,0,0,0.18)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // fully clears old frame
+ctx.clearRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+);
+
+// redraw background
+ctx.fillStyle = "rgba(0,0,0,0.12)";
+ctx.fillRect(
+  0,
+  0,
+  canvas.width,
+  canvas.height
+);
 
   drawPaddle();
+
+  // smoother rewind recording
+if (
+  !paused &&
+  !rewinding &&
+  !timeStopped
+) {
+
+  ballHistory.push({
+    x: ball.x,
+    y: ball.y
+  });
+
+  if (ballHistory.length > MAX_HISTORY) {
+    ballHistory.shift();
+  }
+}
 
 if (rewinding) {
   rewindBall();
