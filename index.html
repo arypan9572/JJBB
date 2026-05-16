@@ -4,23 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>jojo's bizzare breakout</title>
-<link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
 
   <style>
     body {
-      margin: 0;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      transition: filter 0.3s ease;
-        overflow: hidden;
-      position: relative;
-    }
+  margin: 0;
+
+  background:
+    radial-gradient(circle at top,
+      #1a1a1a 0%,
+      #0d0d0d 40%,
+      #050505 100%);
+
+  color: white;
+
+  font-family:
+    Inter,
+    Arial,
+    sans-serif;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 100vh;
+
+  overflow: hidden;
+  position: relative;
+
+  transition:
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.8s ease;
+
+  letter-spacing: 0.3px;
+}
 
     html, body {
   overflow: hidden;
@@ -29,9 +47,28 @@
 
     
     canvas {
-      background: black;
-      border: 3px solid white;
-    }
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(20,20,20,0.95),
+      rgba(0,0,0,1)
+    );
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  border-radius: 22px;
+
+  box-shadow:
+    0 20px 80px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.4s ease,
+    box-shadow 0.4s ease;
+
+  backdrop-filter: blur(6px);
+}
 
     .instructions {
       margin-top: 10px;
@@ -126,30 +163,32 @@
   align-items: center;
 
   background:
-    radial-gradient(circle at center,
-      rgba(0,120,255,0.15),
-      rgba(0,0,0,0.92));
+    linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.72),
+      rgba(0,0,0,0.88)
+    );
 
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
 
   z-index: 200000;
 
-  animation: pauseFade 0.35s ease;
+  animation:
+    fadeScreen 0.35s ease;
 }
 
-#pauseTitle {
-  font-size: 90px;
-  font-weight: bold;
+@keyframes fadeScreen {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
 
-  color: white;
-
-  text-shadow:
-    0 0 20px cyan,
-    0 0 40px deepskyblue,
-    0 0 80px blue;
-
-  animation: pulsePause 2s infinite ease-in-out;
+  to {
+    opacity: 1;
+    backdrop-filter: blur(14px);
+  }
 }
+
 
 .pauseSub {
   margin-top: 10px;
@@ -344,27 +383,89 @@ will-change: transform, opacity, filter;
 
   display: none;
 }
+    
+#pauseTitle,
 #gameOverText {
-  font-size: 60px;
-  color: red;
-  text-shadow: 0 0 20px red;
-  animation: popIn 0.6s ease-out;
+  font-size: 72px;
+  font-weight: 800;
+
+  color: white;
+
+  letter-spacing: 8px;
+
+  text-transform: uppercase;
+
+  animation:
+    smoothPop 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+
+  transform-origin: center;
 }
 
+@keyframes smoothPop {
+  0% {
+    opacity: 0;
+    transform:
+      scale(0.8)
+      translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      scale(1)
+      translateY(0px);
+  }
+}
+
+#startBtn,
 #resetBtn {
   margin-top: 20px;
-  padding: 12px 25px;
-  font-size: 20px;
-  border: none;
+
+  padding: 14px 30px;
+
+  border: 1px solid rgba(255,255,255,0.1);
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.08),
+      rgba(255,255,255,0.03)
+    );
+
+  color: white;
+
+  font-size: 17px;
+  font-weight: 600;
+
   cursor: pointer;
-  border-radius: 10px;
-  background: white;
-  color: black;
-  transition: transform 0.2s;
+
+  backdrop-filter: blur(8px);
+
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s ease,
+    border 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
+#startBtn:hover,
 #resetBtn:hover {
-  transform: scale(1.1);
+  transform:
+    translateY(-3px)
+    scale(1.02);
+
+  border-color:
+    rgba(255,255,255,0.22);
+
+  box-shadow:
+    0 12px 35px rgba(0,0,0,0.45);
+}
+
+#startBtn:active,
+#resetBtn:active {
+  transform: scale(0.96);
 }
 
 @keyframes popIn {
@@ -777,7 +878,7 @@ will-change: transform, opacity, filter;
 </div>
 
   <div id="pauseScreen">
-  <div id="pauseTitle">⏸ PAUSED</div>
+  <div id="pauseTitle">PAUSED</div>
 
   <div class="pauseSub">
     Time has stopped.
@@ -913,6 +1014,34 @@ const MAX_HISTORY = 3000;
 let rewindDuration = 8000;
 let rewindStartTime = 0;
 let highlightPoints = [];
+  const particles = [];
+
+function cameraImpact(intensity = 8) {
+
+  canvas.animate([
+
+    {
+      transform: "translate(0px,0px) scale(1)"
+    },
+
+    {
+      transform:
+        `translate(
+          ${Math.random() * intensity - intensity/2}px,
+          ${Math.random() * intensity - intensity/2}px
+        )
+        scale(1.015)`
+    },
+
+    {
+      transform: "translate(0px,0px) scale(1)"
+    }
+
+  ], {
+    duration: 320,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+  });
+}
 
 // ======================
 // COOLDOWNS
@@ -1021,6 +1150,27 @@ tri.style.opacity = fadeIn * fadeOut;
   }
 
   requestAnimationFrame(updateTriangles);
+}
+
+function spawnParticles(x, y, color) {
+
+  for (let i = 0; i < 12; i++) {
+
+    particles.push({
+
+      x,
+      y,
+
+      dx: (Math.random() - 0.5) * 6,
+      dy: (Math.random() - 0.5) * 6,
+
+      size: Math.random() * 4 + 2,
+
+      life: 1,
+
+      color
+    });
+  }
 }
 
 function createStandRing(type, arrowClass) {
@@ -1146,6 +1296,7 @@ function activateZaWarudo() {
   iterations: 2
 });
   flashScreen("flashZA");
+  cameraImpact(8);
 
   timeStopped = true;
 
@@ -1237,6 +1388,7 @@ function activateBites() {
   bitesLastUsed = now;
 
   flashScreen("flashBites");
+  cameraImpact(20);
 
   bitesActive = true;
   rewinding = true;
@@ -1381,6 +1533,7 @@ function activateCMoon() {
 
   createStandRing("cmoonRing", "arrowBlue");
   flashScreen("flashCMoon");
+  cameraImpact(12);
 
   cMoonActive = true;
 
@@ -1429,6 +1582,8 @@ const paddle = {
   speed: 8,
   dx: 0
 };
+
+let paddleVelocity = 0;
 
 // =====================
 // BALL (NO TRAIL VISUALS)
@@ -1481,7 +1636,20 @@ const bricks = [];
 for (let r = 0; r < brickInfo.rows; r++) {
   bricks[r] = [];
   for (let c = 0; c < brickInfo.cols; c++) {
-    bricks[r][c] = { x: 0, y: 0, visible: true };
+    const colors = [
+  "#ff4d6d",
+  "#ff9f1c",
+  "#ffe66d",
+  "#4ecdc4",
+  "#4d96ff"
+];
+
+bricks[r][c] = {
+  x: 0,
+  y: 0,
+  visible: true,
+  color: colors[r]
+};
   }
 }
 
@@ -1498,13 +1666,18 @@ function drawBricks() {
         brick.y = by;
 ctx.globalAlpha = 0.75;
 
-if (r === 0) ctx.fillStyle = "red";
-else if (r === 1) ctx.fillStyle = "orange";
-else if (r === 2) ctx.fillStyle = "yellow";
-else if (r === 3) ctx.fillStyle = "green";
-else ctx.fillStyle = "deepskyblue";
+ctx.fillStyle = brick.color;
+ctx.beginPath();
 
-ctx.fillRect(bx, by, brickInfo.width, brickInfo.height);
+ctx.roundRect(
+  bx,
+  by,
+  brickInfo.width,
+  brickInfo.height,
+  8
+);
+
+ctx.fill();
 
 // reset alpha so it doesn't affect other drawings
 ctx.globalAlpha = 1.0;
@@ -1535,9 +1708,27 @@ if (
         brick.visible = false;
         score++;
 
+
+  spawnParticles(
+  brick.x + brickInfo.width / 2,
+  brick.y + brickInfo.height / 2,
+  brick.color
+);
+
+cameraImpact(5);
+
         // 💥 NORMAL MODE: bounce
         if (!bitesActive) {
           ball.speedY *= -1;
+
+          canvas.animate([
+  { transform: "scale(1)" },
+  { transform: "scale(1.01)" },
+  { transform: "scale(1)" }
+], {
+  duration: 180,
+  easing: "ease-out"
+});
 
           if (ball.speedY > 0) {
             ball.y = brick.y + brickInfo.height + ball.radius;
@@ -1578,8 +1769,18 @@ if (
 // =====================
 function drawBall() {
 
-  
-  // MAIN BALL
+  const gradient = ctx.createRadialGradient(
+    ball.x - 3,
+    ball.y - 3,
+    2,
+    ball.x,
+    ball.y,
+    ball.radius
+  );
+
+  gradient.addColorStop(0, "#fff5cc");
+  gradient.addColorStop(1, "#ff8c00");
+
   ctx.beginPath();
 
   ctx.arc(
@@ -1590,12 +1791,9 @@ function drawBall() {
     Math.PI * 2
   );
 
- ctx.fillStyle = "orange";
+  ctx.fillStyle = gradient;
 
   ctx.fill();
-
-  // IMPORTANT reset glow
-  ctx.shadowBlur = 0;
 }
 
 // =====================
@@ -1608,6 +1806,41 @@ ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
 
 const PADDLE_MIN = 50;
 const PADDLE_SHRINK = 0.0025;
+
+function drawParticles() {
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+
+    const p = particles[i];
+
+    p.x += p.dx;
+    p.y += p.dy;
+
+    p.life -= 0.03;
+
+    ctx.globalAlpha = p.life;
+
+    ctx.fillStyle = p.color;
+
+    ctx.beginPath();
+
+    ctx.arc(
+      p.x,
+      p.y,
+      p.size,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fill();
+
+    ctx.globalAlpha = 1;
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
 
 function drawScore() {
   ctx.fillStyle = "white";
@@ -1626,7 +1859,12 @@ function movePaddle() {
 
   if (paused) return;
   
-  paddle.x += paddle.dx;
+  const targetVelocity = paddle.dx;
+
+paddleVelocity +=
+(targetVelocity - paddleVelocity) * 0.18;
+
+paddle.x += paddleVelocity;
 
   paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x));
 
@@ -1842,7 +2080,7 @@ function draw() {
     requestAnimationFrame(draw);
     return;
   }
-  ctx.fillStyle = "rgba(0,0,0,0.25)";
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   drawPaddle();
@@ -1850,11 +2088,13 @@ function draw() {
 if (rewinding) {
   rewindBall();
   drawBall();
+  drawParticles();
 } else {
   movePaddle();
   moveBall();
   brickCollision(); // 🔥 THIS WAS MISSING
   drawBall();
+  drawParticles();
 }
 
   drawBricks();
