@@ -1083,11 +1083,14 @@ let bitesStartTime = 0;
 let triangleActive = false;
 
 
-triangles.forEach(t => t.remove());
-triangles = [];
+
 
 
 let triangles = [];
+triangles.forEach(t => t.remove());
+triangles = [];
+  
+  
 const TRIANGLE_COUNT = 60;
 function initTriangles() {
   triangles = [];
