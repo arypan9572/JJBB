@@ -1083,6 +1083,10 @@ let bitesStartTime = 0;
 let triangleActive = false;
 
 
+triangles.forEach(t => t.remove());
+triangles = [];
+
+
 let triangles = [];
 const TRIANGLE_COUNT = 60;
 function initTriangles() {
@@ -1474,6 +1478,7 @@ for (let tri of triangles) {
 
     ballHistory = [];
   }, rewindDuration);
+  particles.length = 0;
 }
   
 function triggerCMoonEffect() {
@@ -1960,7 +1965,11 @@ document.getElementById("cooldownUI").classList.add("hidden-ui");
   }
 
   // history (ONLY ONCE)
-  ballHistory.push({ x: ball.x, y: ball.y });
+ballHistory.push({ x: ball.x, y: ball.y });
+
+if (ballHistory.length > 2000) {
+  ballHistory.shift();
+}
 }
   
 function getKeybind(power) {
@@ -2019,23 +2028,12 @@ function rewindBall() {
   // rewind motion blur
   ctx.save();
 
-  ctx.globalAlpha = 0.18;
-
-  for (let i = 1; i <= 8; i++) {
-
-    ctx.beginPath();
-
-    ctx.arc(
-      ball.x + ball.speedX * i * 0.6,
-      ball.y + ball.speedY * i * 0.6,
-      ball.radius - i * 0.4,
-      0,
-      Math.PI * 2
-    );
-
-    ctx.fillStyle = "violet";
-    ctx.fill();
-  }
+ctx.globalAlpha = 0.3;
+ctx.beginPath();
+ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+ctx.fillStyle = "violet";
+ctx.fill();
+ctx.globalAlpha = 1;
 
   ctx.restore();
 }
