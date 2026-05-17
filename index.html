@@ -1018,8 +1018,9 @@ let rewindStartIndex = 0;
 // =====================
 // HISTORY SYSTEM (BITES)
 // =====================
-let ballHistory = [];
-const MAX_HISTORY = 12000;
+const MAX_HISTORY = 3000;
+let ballHistory = new Array(MAX_HISTORY);
+let historyIndex = 0;
   
 let rewindDuration = 8000;
 let rewindStartTime = 0;
@@ -1117,10 +1118,12 @@ function resetTriangle(tri, offsetX = window.innerWidth) {
 
 function updateTriangles() {
 
-  if (!triangleActive) {
-    requestAnimationFrame(updateTriangles);
-    return;
-  }
+if (!triangleActive) {
+  triangles.forEach(t => t.remove());
+  triangles = [];
+  requestAnimationFrame(updateTriangles);
+  return;
+}
 
   const centerY = window.innerHeight / 2;
 
@@ -1453,10 +1456,14 @@ function activateBites() {
   rewindStartIndex = 0;
 
   // SPEED SYNC LOOP
-  const sync = setInterval(() => {
-    triangleSpeed = Math.max(2, Math.abs(ball.speedX) + Math.abs(ball.speedY));
-  }, 100);
+  let bitesSyncInterval;
 
+if (bitesSyncInterval) clearInterval(bitesSyncInterval);
+
+bitesSyncInterval = setInterval(() => {
+  triangleSpeed = Math.max(2, Math.abs(ball.speedX) + Math.abs(ball.speedY));
+}, 100);
+  
   setTimeout(() => {
     clearInterval(sync);
 
@@ -1479,7 +1486,13 @@ for (let tri of triangles) {
     rewinding = false;
     bitesActive = false;
 
+    const rewindSnapshot = ballHistory.slice();
+
     ballHistory = [];
+rewindSnapshot.length = 0;
+clearInterval(bitesSyncInterval);
+bitesSyncInterval = null;
+    
   }, rewindDuration);
   particles.length = 0;
 }
@@ -1968,11 +1981,7 @@ document.getElementById("cooldownUI").classList.add("hidden-ui");
   }
 
   // history (ONLY ONCE)
-ballHistory.push({ x: ball.x, y: ball.y });
 
-if (ballHistory.length > 2000) {
-  ballHistory.shift();
-}
 }
   
 function getKeybind(power) {
@@ -2000,10 +2009,12 @@ function rewindBall() {
     ? progress * progress
     : 1 - Math.pow(1 - progress, 3);
   
-  const index =
-    Math.floor(
-      (1 - eased) * (ballHistory.length - 1)
-    );
+  const history = rewindSnapshot;
+
+const index =
+  Math.floor(
+    (1 - eased) * (history.length - 1)
+  );
 
   const nextIndex =
     Math.min(
@@ -2011,8 +2022,8 @@ function rewindBall() {
       ballHistory.length - 1
     );
 
-  const p1 = ballHistory[index];
-  const p2 = ballHistory[nextIndex];
+const p1 = history[index];
+const p2 = history[nextIndex];
 
   if (!p1 || !p2) return;
 
@@ -2187,14 +2198,12 @@ if (
   !timeStopped
 ) {
 
-  ballHistory.push({
-    x: ball.x,
-    y: ball.y
-  });
+ ballHistory[historyIndex] = {
+  x: ball.x,
+  y: ball.y
+};
 
-  if (ballHistory.length > MAX_HISTORY) {
-    ballHistory.shift();
-  }
+historyIndex = (historyIndex + 1) % MAX_HISTORY;
 }
 
 if (rewinding) {
