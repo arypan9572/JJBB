@@ -1050,6 +1050,8 @@ transform: translateZ(0);
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+const activeSounds = new Set();
+
 const zaWarudoSound = document.getElementById("zaWarudoSound");
 const tomattaSound = document.getElementById("tomattaSound");
 const timeResumeSound = document.getElementById("timeResumeSound");
@@ -1059,6 +1061,10 @@ const cMoonAudios = [
   "cmvl2.mp3",
   "cmvl3.mp3"
 ];
+
+const bgm = new Audio("bgm.mp3");
+bgm.loop = true;
+bgm.volume = 0.6;
 
 const gifOverlay = document.getElementById("gifOverlay");
 const sbrGif = document.getElementById("sbrGif");
@@ -1340,6 +1346,10 @@ function flashScreen(className) {
   }, 800);
 }
 
+function isFrozen() {
+  return paused || timeStopped || bitesActive || rewinding || cMoonActive;
+}
+  
 // ======================
 // COOLDOWN UI
 // ======================
@@ -1412,6 +1422,8 @@ function activateZaWarudo() {
 
   zaLastUsed = now;
 
+  bgm.volume = 0.15;
+
   createStandRing("zaRing", "arrowGold");
   canvas.animate([
   { transform: "translate(0px,0px)" },
@@ -1477,9 +1489,14 @@ function activateZaWarudo() {
 
   requestAnimationFrame(slowDownStep);
 
-  (Math.random() < 0.5
-    ? zaWarudoSound
-    : tomattaSound).play();
+ const sound = Math.random() < 0.5
+  ? zaWarudoSound
+  : tomattaSound;
+
+sound.currentTime = 0;
+sound.play();
+
+activeSounds.add(sound);
 
   zaText.style.animation = "none";
   void zaText.offsetWidth;
@@ -1487,10 +1504,13 @@ function activateZaWarudo() {
 
   setTimeout(() => {
     timeResumeSound.play();
+    activeSounds.add(timeResumeSound);
   }, 5700);
 
   setTimeout(() => {
     timeStopped = false;
+
+    bgm.volume = 0.6;
 
     ball.speedX = savedX;
     ball.speedY = savedY;
@@ -1541,6 +1561,8 @@ function activateBites() {
 
   bitesLastUsed = now;
 
+  bgm.volume = 0.15;
+
   // ===== START EFFECT =====
   flashScreen("flashBites");
   cameraImpact(18);
@@ -1550,9 +1572,12 @@ function activateBites() {
 
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
+  activeSounds.add(bitesSound);
 
   // SAVE HISTORY SNAPSHOT
-  rewindSnapshot = ballHistory.filter(Boolean);
+  rewindSnapshot = ballHistory
+  .slice(0, MAX_HISTORY)
+  .filter(p => p && typeof p.x === "number");
 
   if (rewindSnapshot.length < 10) {
     rewinding = false;
@@ -1667,6 +1692,7 @@ document.body.animate(
     rewinding = false;
     bitesActive = false;
 
+    bgm.volume = 0.6;
     triangleActive = false;
 
     document.body.classList.remove("bites-effect");
@@ -1837,44 +1863,47 @@ function activateCMoon() {
 
   cmoonLastUsed = now;
 
+  bgm.volume = 0.15;
+
   
   flashScreen("flashCMoon");
   cameraImpact(12);
 
   cMoonActive = true;
 
-  const src =
-    cMoonAudios[
-      Math.floor(Math.random() * cMoonAudios.length)
-    ];
+const src =
+  cMoonAudios[
+    Math.floor(Math.random() * cMoonAudios.length)
+  ];
 
-  const audio = new Audio(src);
+const audio = new Audio(src);
 
-  audio.addEventListener("loadedmetadata", () => {
+activeSounds.add(audio);
 
-    let duration = audio.duration;
+audio.addEventListener("loadedmetadata", () => {
+  let duration = audio.duration;
 
-    if (isNaN(duration) || !isFinite(duration)) {
-      duration = 4;
-    }
+  if (isNaN(duration) || !isFinite(duration)) {
+    duration = 4;
+  }
 
-    const midpoint = (duration / 2) * 1000;
+  const midpoint = (duration / 2) * 1000;
 
-    audio.play().catch(() => {});
+  audio.play().catch(() => {});
 
-    setTimeout(() => {
-      triggerCMoonEffect();
-    }, midpoint);
+  setTimeout(() => {
+    triggerCMoonEffect();
+  }, midpoint);
 
-    setTimeout(() => {
-      cMoonActive = false;
-    }, duration * 1000 + 500);
-
-  });
-
-  audio.addEventListener("error", () => {
+  setTimeout(() => {
     cMoonActive = false;
-  });
+    bgm.volume = 0.6;
+  }, duration * 1000 + 500);
+});
+
+audio.addEventListener("error", () => {
+  cMoonActive = false;
+});
 }
 
 // =====================
@@ -2003,21 +2032,20 @@ ctx.globalAlpha = 1.0;
       }
 
 
-  if (rewinding && !brick.visible) {
-  ctx.globalAlpha = 0.08;
-
-  ctx.strokeStyle = "violet";
-  ctx.strokeRect(brick.x, brick.y, brickInfo.width, brickInfo.height);
-
-  ctx.globalAlpha = 1;
-}
+  // 👇 ADD IT HERE (RIGHT AFTER BRICK DRAWING LOOP PER BRICK)
+    if (rewinding && !brick.visible) {
+      ctx.globalAlpha = 0.08;
+      ctx.strokeStyle = "violet";
+      ctx.strokeRect(brick.x, brick.y, brickInfo.width, brickInfo.height);
+      ctx.globalAlpha = 1;
+    }
     }
   }
 }
 
 function brickCollision() {
 
-  if (paused) return;
+  if (isFrozen()) return;
   if (timeStopped) return;
 
   for (let r = 0; r < brickInfo.rows; r++) {
@@ -2220,7 +2248,7 @@ function drawLives() {
 // =====================
 function movePaddle() {
 
-  if (paused) return;
+  if (isFrozen()) return;
   
   const targetVelocity = paddle.dx;
 
@@ -2238,7 +2266,7 @@ paddle.x += paddleVelocity;
 
 function moveBall() {
 
-  if (paused) return;
+  if (isFrozen()) return;
   
   if (timeStopped || bitesActive) return;
 
@@ -2312,6 +2340,15 @@ document.getElementById("cooldownUI").classList.add("hidden-ui");
   }
 
   // history (ONLY ONCE)
+
+  if (!paused && !rewinding && !timeStopped) {
+  ballHistory[historyIndex] = {
+    x: ball.x,
+    y: ball.y
+  };
+
+  historyIndex = (historyIndex + 1) % MAX_HISTORY;
+}
 
 }
   
@@ -2403,6 +2440,17 @@ else {
     // show pause menu
     pauseScreen.style.display = "flex";
 
+
+    let fadeOut = setInterval(() => {
+  bgm.volume = Math.max(0, bgm.volume - 0.05);
+  if (bgm.volume <= 0) clearInterval(fadeOut);
+}, 50);
+
+
+    activeSounds.forEach(s => {
+  if (!s.paused) s.pause();
+});
+
     // blur/darken game
     canvas.style.filter =
       "blur(3px) brightness(0.6)";
@@ -2414,6 +2462,16 @@ else {
 
     // hide pause menu
     pauseScreen.style.display = "none";
+
+    let fadeIn = setInterval(() => {
+  bgm.volume = Math.min(0.6, bgm.volume + 0.05);
+  if (bgm.volume >= 0.6) clearInterval(fadeIn);
+}, 50);
+
+
+    activeSounds.forEach(s => {
+  s.play().catch(()=>{});
+});
 
     // remove blur
     canvas.style.filter = "";
@@ -2523,7 +2581,9 @@ ctx.fillRect(
 if (
   !paused &&
   !rewinding &&
-  !timeStopped
+  !timeStopped &&
+  !bitesActive &&
+  !cMoonActive
 ) {
 
  ballHistory[historyIndex] = {
@@ -2584,6 +2644,7 @@ startBtn.addEventListener("click", async () => {
   try {
     sbrSound.currentTime = 0;
     await sbrSound.play();
+    activeSounds.add(sbrSound);
   } catch (e) {}
 
   // STEP 1: after 3.2s → switch image → GIF
@@ -2607,6 +2668,7 @@ setTimeout(() => {
   gifOverlay.style.display = "none";
   document.getElementById("cooldownUI").classList.remove("hidden-ui");
   gameStarted = true;
+  bgm.play().catch(()=>{});
 }, 3200 + 4700);
 });
 
