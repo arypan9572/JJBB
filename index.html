@@ -765,6 +765,45 @@ transform: translateZ(0);
   100% { background: transparent; }
 }
 
+
+@keyframes temporalMelt {
+
+  0% {
+    filter:
+      blur(0px)
+      hue-rotate(0deg)
+      contrast(1);
+  }
+
+  25% {
+    filter:
+      blur(2px)
+      hue-rotate(90deg)
+      contrast(1.4);
+  }
+
+  50% {
+    filter:
+      blur(8px)
+      hue-rotate(240deg)
+      contrast(2);
+  }
+
+  75% {
+    filter:
+      blur(3px)
+      hue-rotate(120deg)
+      contrast(1.5);
+  }
+
+  100% {
+    filter:
+      blur(0px)
+      hue-rotate(0deg)
+      contrast(1);
+  }
+}
+
 @keyframes flashCMoonAnim {
   0% { background: rgba(0,200,255,0.8); }
   100% { background: transparent; }
@@ -1030,31 +1069,33 @@ let rewindStartTime = 0;
 let highlightPoints = [];
   const particles = [];
 
-function cameraImpact(intensity = 8) {
+let cameraX = 0;
+let cameraY = 0;
+let cameraVX = 0;
+let cameraVY = 0;
 
-  canvas.animate([
+function cameraImpact(intensity = 12) {
 
-    {
-      transform: "translate(0px,0px) scale(1)"
-    },
+  cameraVX +=
+    (Math.random() - 0.5) * intensity;
 
-    {
-      transform:
-        `translate(
-          ${Math.random() * intensity - intensity/2}px,
-          ${Math.random() * intensity - intensity/2}px
-        )
-        scale(1.015)`
-    },
+  cameraVY +=
+    (Math.random() - 0.5) * intensity;
+}
 
-    {
-      transform: "translate(0px,0px) scale(1)"
-    }
+function updateCamera() {
 
-  ], {
-    duration: 320,
-    easing: "cubic-bezier(0.22, 1, 0.36, 1)"
-  });
+  cameraVX *= 0.82;
+  cameraVY *= 0.82;
+
+  cameraX += cameraVX;
+  cameraY += cameraVY;
+
+  cameraX *= 0.9;
+  cameraY *= 0.9;
+
+  canvas.style.transform =
+    `translate(${cameraX}px, ${cameraY}px)`;
 }
 
 // ======================
@@ -1350,6 +1391,30 @@ function activateZaWarudo() {
   flashScreen("flashZA");
   cameraImpact(8);
 
+  document.body.animate([
+
+  {
+    filter:
+      "brightness(1) contrast(1)"
+  },
+
+  {
+    filter:
+      "brightness(3) contrast(2)"
+  },
+
+  {
+    filter:
+      "brightness(0.3) contrast(2)"
+  }
+
+], {
+
+  duration: 500,
+  easing: "ease-out"
+
+});
+
   timeStopped = true;
 
   document.body.classList.add("za-warudo");
@@ -1461,8 +1526,15 @@ function activateBites() {
 
   rewindStartTime = performance.now();
 
+
+  ball.speedX = 0;
+ball.speedY = 0;
+
   // VISUAL MODE
   document.body.classList.add("bites-effect");
+
+  document.body.style.animation =
+  "temporalMelt 8s ease-in-out";
 
   // TRIANGLES
   triangleActive = true;
@@ -1555,7 +1627,15 @@ function activateBites() {
     clearInterval(bitesSyncInterval);
     bitesSyncInterval = null;
 
-    rewindSnapshot = [];
+    const spawn = rewindSnapshot[0];
+
+if (spawn) {
+
+  ball.x = spawn.x;
+  ball.y = spawn.y;
+}
+
+rewindSnapshot = [];
 
   }, rewindDuration);
 }
@@ -1604,6 +1684,35 @@ function triggerCMoonEffect() {
   }
 
   showCMoonVisual(dir);
+
+  canvas.animate([
+
+  {
+    transform:
+      "perspective(800px) rotateX(0deg) rotateY(0deg)"
+  },
+
+  {
+    transform:
+      "perspective(800px) rotateX(8deg) rotateY(-8deg)"
+  },
+
+  {
+    transform:
+      "perspective(800px) rotateX(-8deg) rotateY(8deg)"
+  },
+
+  {
+    transform:
+      "perspective(800px) rotateX(0deg) rotateY(0deg)"
+  }
+
+], {
+
+  duration: 1400,
+  easing: "cubic-bezier(0.22, 1, 0.36, 1)"
+
+});
 
   const oldX = ball.speedX;
   const oldY = ball.speedY;
@@ -1894,6 +2003,31 @@ if (!bitesActive) {
 // =====================
 function drawBall() {
 
+
+  if (rewinding) {
+
+  for (let i = 0; i < 6; i++) {
+
+    ctx.globalAlpha = 0.08 * (6 - i);
+
+    ctx.beginPath();
+
+    ctx.arc(
+      ball.x + i * 12,
+      ball.y,
+      ball.radius,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fillStyle = "violet";
+
+    ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+}
+
   ctx.beginPath();
 
   ctx.arc(
@@ -2066,9 +2200,13 @@ function rewindBall() {
   const progress =
     Math.min(elapsed / rewindDuration, 1);
 
+
+  if (elapsed < 900) return;
+
   // smooth rewind curve
-  const eased =
-    easeInOutCubic(progress);
+const eased =
+  Math.sin(progress * Math.PI / 2) *
+  Math.pow(progress, 0.35);
 
   const history = rewindSnapshot;
 
@@ -2243,6 +2381,7 @@ function draw() {
   }
 
   lastFrameTime = now;
+  updateCamera();
   // fully clears old frame
 ctx.clearRect(
   0,
