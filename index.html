@@ -279,44 +279,28 @@ will-change: transform, opacity, filter;
 
 #cmoonArrow {
   position: fixed;
-
   top: 50%;
   left: 50%;
 
-  transform:
-    translate(-50%, -50%)
-    rotate(0deg)
-    scale(0.4);
+  transform: translate(-50%, -50%) scale(0.4);
 
-  font-size: 180px; /* TWICE AS BIG */
-  font-weight: 900;
+  font-size: 280px; /* BIGGER */
+  font-weight: 1000;
 
   color: #8ffcff;
 
   opacity: 0;
-
   z-index: 999999;
 
   pointer-events: none;
 
   text-shadow:
-    0 0 10px rgba(255,255,255,0.9),
-    0 0 25px cyan,
-    0 0 60px deepskyblue,
-    0 0 120px rgba(0,180,255,0.9);
+    0 0 10px white,
+    0 0 30px cyan,
+    0 0 80px deepskyblue,
+    0 0 140px rgba(0,180,255,0.9);
 
-  filter:
-    drop-shadow(0 0 20px cyan);
-
-  will-change:
-    transform,
-    opacity,
-    filter;
-
-  transition:
-    transform 1s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.5s ease,
-    filter 0.8s ease;
+  -webkit-text-stroke: 2px rgba(255,255,255,0.4);
 }
 
 .spin-left {
@@ -1231,18 +1215,22 @@ function updateCamera() {
   targetCameraY *= 0.82;
 
   if (paused) {
-  targetCameraX *= 0.6;
-  targetCameraY *= 0.6;
-}
+    targetCameraX *= 0.6;
+    targetCameraY *= 0.6;
+  }
 
   cameraX += (targetCameraX - cameraX) * 0.12;
   cameraY += (targetCameraY - cameraY) * 0.12;
 
+  const pull =
+    rewinding
+      ? Math.sin((performance.now() - rewindStartTime) / rewindDuration * Math.PI) * 0.015
+      : 0;
+
   canvas.style.transform =
-    `
-    translate(${cameraX}px, ${cameraY}px)
-    rotate(${cameraX * 0.04}deg)
-    `;
+    `translate(${cameraX}px, ${cameraY}px)
+     rotate(${cameraX * 0.04}deg)
+     scale(${1 + pull})`;
 }
 
 // ======================
@@ -1712,8 +1700,14 @@ historyIndex = 0;
 
   // VISUAL MODE
 document.body.classList.add("bites-world");
-  document.body.style.animation =
-  "temporalMelt 8s ease-in-out";
+ document.body.animate([
+  { filter: "none" },
+  { filter: "hue-rotate(180deg) blur(6px)" },
+  { filter: "none" }
+], {
+  duration: rewindDuration,
+  easing: "ease-in-out"
+});
 
   // TRIANGLES
   triangleActive = true;
@@ -1804,7 +1798,8 @@ triangleSpeed +=
 
     triangleActive = false;
 
-    document.body.classList.remove("bites-effect");
+    document.body.classList.remove("bites-world");
+document.body.style.animation = "";
 
     clearInterval(bitesSyncInterval);
     bitesSyncInterval = null;
@@ -1886,19 +1881,11 @@ ripple.style.backdropFilter =
 arrow.style.opacity = "1";
 
 if (dir === 1) {
-
   arrow.style.transform =
-    "translate(-50%, -50%) rotate(90deg)";
-}
-
-else {
-
+    `translate(-50%, -50%) rotate(90deg) scale(1.2)`;
+} else {
   arrow.style.transform =
-  `
-  translate(-50%, -50%)
-  rotate(90deg)
-  scale(1.25)
-  `;
+    `translate(-50%, -50%) rotate(-90deg) scale(1.2)`;
 }
 
 setTimeout(() => {
@@ -1906,12 +1893,8 @@ setTimeout(() => {
   arrow.style.opacity = "0";
 
   // reset back upward
- arrow.style.transform =
-  `
-  translate(-50%, -50%)
-  rotate(0deg)
-  scale(0.4)
-  `;
+arrow.style.transform =
+  `translate(-50%, -50%) rotate(0deg) scale(0.4)`;
 
 }, 1200);
 
@@ -2656,22 +2639,6 @@ function draw() {
   updateCamera();
   // fully clears old frame
 
-
-  if (rewinding) {
-
-  const elapsed =
-    performance.now() - rewindStartTime;
-
-  const t =
-    Math.min(elapsed / rewindDuration, 1);
-
-  const pull =
-    Math.sin(t * Math.PI) * 0.015;
-
-  canvas.style.transform +=
-    ` scale(${1 + pull})`;
-}
-  
 ctx.clearRect(
   0,
   0,
