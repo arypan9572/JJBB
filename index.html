@@ -1014,6 +1014,9 @@ let rewinding = false;
 let cMoonActive = false;
 let rewindStartIndex = 0;
 
+let rewindSnapshot = [];
+let bitesSyncInterval = null;
+
 
 // =====================
 // HISTORY SYSTEM (BITES)
@@ -1087,9 +1090,7 @@ let triangleActive = false;
 
 
 
-let triangles = [];
-triangles.forEach(t => t.remove());
-triangles = [];
+
   
   
 const TRIANGLE_COUNT = 60;
@@ -1119,8 +1120,11 @@ function resetTriangle(tri, offsetX = window.innerWidth) {
 function updateTriangles() {
 
 if (!triangleActive) {
-  triangles.forEach(t => t.remove());
-  triangles = [];
+
+  for (const tri of triangles) {
+    tri.style.opacity = "0";
+  }
+
   requestAnimationFrame(updateTriangles);
   return;
 }
@@ -1427,74 +1431,133 @@ function showCMoonVisual(dir) {
 // BITES THE DUST (YOUR VERSION RESTORD)
 // =====================
 function activateBites() {
+
   const now =
-  performance.now() - totalPausedTime;
+    performance.now() - totalPausedTime;
 
   if (now - bitesLastUsed < bitesCooldown) return;
-  if (bitesActive || timeStopped || cMoonActive) return;
+  if (bitesActive || rewinding || timeStopped || cMoonActive) return;
 
   bitesLastUsed = now;
 
+  // ===== START EFFECT =====
   flashScreen("flashBites");
-  cameraImpact(20);
+  cameraImpact(18);
 
   bitesActive = true;
   rewinding = true;
 
-  triangleActive = true;
-  triangleSpeed = Math.min(12, Math.abs(ball.speedX) + Math.abs(ball.speedY));
-
-  triangleActive = true;
-  bitesStartTime = performance.now();
- triangleSpeed = 28;
   bitesSound.currentTime = 0;
   bitesSound.play().catch(()=>{});
 
-  document.body.classList.add("bites-effect");
+  // SAVE HISTORY SNAPSHOT
+  rewindSnapshot = ballHistory.filter(Boolean);
+
+  if (rewindSnapshot.length < 10) {
+    rewinding = false;
+    bitesActive = false;
+    return;
+  }
 
   rewindStartTime = performance.now();
-  rewindStartIndex = 0;
 
-  // SPEED SYNC LOOP
-  let bitesSyncInterval;
+  // VISUAL MODE
+  document.body.classList.add("bites-effect");
 
-if (bitesSyncInterval) clearInterval(bitesSyncInterval);
+  // TRIANGLES
+  triangleActive = true;
 
-bitesSyncInterval = setInterval(() => {
-  triangleSpeed = Math.max(2, Math.abs(ball.speedX) + Math.abs(ball.speedY));
-}, 100);
-  
+  // recreate if deleted
+  if (triangles.length === 0) {
+    initTriangles();
+  }
+
+  bitesStartTime = performance.now();
+
+  // liquid distortion
+  canvas.animate([
+    {
+      filter: "hue-rotate(0deg) blur(0px)",
+      transform: "scale(1) rotate(0deg)"
+    },
+
+    {
+      filter: "hue-rotate(120deg) blur(4px)",
+      transform: "scale(1.03) rotate(-2deg)"
+    },
+
+    {
+      filter: "hue-rotate(280deg) blur(8px)",
+      transform: "scale(0.97) rotate(2deg)"
+    },
+
+    {
+      filter: "hue-rotate(0deg) blur(0px)",
+      transform: "scale(1) rotate(0deg)"
+    }
+
+  ], {
+    duration: rewindDuration,
+    easing: "ease-in-out"
+  });
+
+  // rotating screen morph
+  document.body.animate([
+
+    {
+      transform: "rotate(0deg) scale(1)"
+    },
+
+    {
+      transform: "rotate(-1deg) scale(1.01)"
+    },
+
+    {
+      transform: "rotate(1deg) scale(0.99)"
+    },
+
+    {
+      transform: "rotate(0deg) scale(1)"
+    }
+
+  ], {
+    duration: 1800,
+    iterations: Math.ceil(rewindDuration / 1800),
+    easing: "ease-in-out"
+  });
+
+  // speed sync
+  if (bitesSyncInterval) {
+    clearInterval(bitesSyncInterval);
+  }
+
+  bitesSyncInterval = setInterval(() => {
+
+    triangleSpeed =
+      Math.max(
+        2,
+        Math.abs(ball.speedX) +
+        Math.abs(ball.speedY)
+      );
+
+  }, 100);
+
+  // END
   setTimeout(() => {
-    clearInterval(sync);
-
-    triangleActive = false;
-
-// reset positions so next use is clean
-for (let tri of triangles) {
-  tri.x = Math.random() * window.innerWidth;
-}
-
-    document.body.classList.remove("bites-effect");
-
-    const newAngle = randomAngle();
-
-    ball.x = canvas.width / 2;
-    ball.y = canvas.height - 50;
-
-    
 
     rewinding = false;
     bitesActive = false;
 
-    const rewindSnapshot = ballHistory.slice();
+    triangleActive = false;
 
-    ballHistory = [];
-rewindSnapshot.length = 0;
-clearInterval(bitesSyncInterval);
-bitesSyncInterval = null;
-    
+    document.body.classList.remove("bites-effect");
+
+    clearInterval(bitesSyncInterval);
+    bitesSyncInterval = null;
+
+    rewindSnapshot = [];
+
   }, rewindDuration);
-  particles.length = 0;
 }
   
 function triggerCMoonEffect() {
@@ -2003,33 +2066,33 @@ function rewindBall() {
   const progress =
     Math.min(elapsed / rewindDuration, 1);
 
-  // smooth cinematic easing
+  // smooth rewind curve
   const eased =
-  progress < 0.7
-    ? progress * progress
-    : 1 - Math.pow(1 - progress, 3);
-  
+    easeInOutCubic(progress);
+
   const history = rewindSnapshot;
 
-const index =
-  Math.floor(
-    (1 - eased) * (history.length - 1)
-  );
+  if (!history || history.length < 2) return;
 
-  const nextIndex =
-    Math.min(
-      index + 1,
-      ballHistory.length - 1
+  const index =
+    Math.floor(
+      (1 - eased) * (history.length - 1)
     );
 
-const p1 = history[index];
-const p2 = history[nextIndex];
+  const safeIndex =
+    Math.max(
+      0,
+      Math.min(index, history.length - 2)
+    );
+
+  const p1 = history[safeIndex];
+  const p2 = history[safeIndex + 1];
 
   if (!p1 || !p2) return;
 
-  // ultra smooth interpolation
+  // smooth interpolation
   const blend =
-    (elapsed * 0.02) % 1;
+((1 - eased) * (history.length - 1)) % 1;
 
   ball.x =
     p1.x + (p2.x - p1.x) * blend;
@@ -2037,17 +2100,25 @@ const p2 = history[nextIndex];
   ball.y =
     p1.y + (p2.y - p1.y) * blend;
 
+  // destroy bricks during rewind
   checkRewindBrickHits();
 
-  // rewind motion blur
+  // rewind glow
   ctx.save();
 
-ctx.globalAlpha = 0.3;
-ctx.beginPath();
-ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-ctx.fillStyle = "violet";
-ctx.fill();
-ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.4;
+
+  ctx.beginPath();
+  ctx.arc(
+    ball.x,
+    ball.y,
+    ball.radius + 6,
+    0,
+    Math.PI * 2
+  );
+
+  ctx.fillStyle = "violet";
+  ctx.fill();
 
   ctx.restore();
 }
@@ -2181,7 +2252,10 @@ ctx.clearRect(
 );
 
 // redraw background
-ctx.fillStyle = "rgba(0,0,0,0.12)";
+ctx.fillStyle =
+  rewinding
+    ? "rgba(20,0,30,0.35)"
+    : "rgba(0,0,0,1)";
 ctx.fillRect(
   0,
   0,
