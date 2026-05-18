@@ -1569,8 +1569,19 @@ ball.speedY = 0;
   // VISUAL MODE
   document.body.classList.add("bites-effect");
 
-  document.body.style.animation =
-  "temporalMelt 8s ease-in-out";
+ document.body.style.animation = "none";
+void document.body.offsetWidth;
+document.body.animate(
+  [
+    { filter: "blur(0px) hue-rotate(0deg)" },
+    { filter: "blur(6px) hue-rotate(180deg)" },
+    { filter: "blur(0px) hue-rotate(360deg)" }
+  ],
+  {
+    duration: rewindDuration,
+    easing: "ease-in-out"
+  }
+);
 
   // TRIANGLES
   triangleActive = true;
@@ -1990,6 +2001,16 @@ ctx.fill();
 // reset alpha so it doesn't affect other drawings
 ctx.globalAlpha = 1.0;
       }
+
+
+  if (rewinding && !brick.visible) {
+  ctx.globalAlpha = 0.08;
+
+  ctx.strokeStyle = "violet";
+  ctx.strokeRect(brick.x, brick.y, brickInfo.width, brickInfo.height);
+
+  ctx.globalAlpha = 1;
+}
     }
   }
 }
@@ -2110,24 +2131,20 @@ if (!bitesActive) {
 function drawBall() {
 
 
-  if (rewinding) {
-
-  for (let i = 0; i < 6; i++) {
-
-    ctx.globalAlpha = 0.08 * (6 - i);
+if (rewinding) {
+  for (let i = 1; i <= 5; i++) {
+    ctx.globalAlpha = 0.15 * (1 - i / 5);
 
     ctx.beginPath();
-
     ctx.arc(
-      ball.x + i * 12,
-      ball.y,
+      ball.x + i * 6,
+      ball.y + i * 3,
       ball.radius,
       0,
       Math.PI * 2
     );
 
     ctx.fillStyle = "violet";
-
     ctx.fill();
   }
 
@@ -2308,74 +2325,55 @@ function getKeybind(power) {
 // BITES REWIND
 // =====================
 function rewindBall() {
-
   if (!rewinding) return;
 
-  const elapsed =
-    performance.now() - rewindStartTime;
+  const elapsed = performance.now() - rewindStartTime;
+  let t = Math.min(elapsed / rewindDuration, 1);
 
-  const progress =
-    Math.min(elapsed / rewindDuration, 1);
+  // 🔥 smooth ease-in-out base
+  t = easeInOutCubic(t);
 
-
-  if (elapsed < 900) return;
-
-  // smooth rewind curve
-const eased =
-  Math.sin(progress * Math.PI / 2) *
-  Math.pow(progress, 0.35);
+  // 🔥 NEW: Bites the Dust "pressure curve"
+  // accelerates to midpoint, then slows down harder than linear
+  const pressureCurve =
+    t < 0.5
+      ? Math.pow(t * 2, 1.8) * 0.5
+      : 0.5 + Math.pow((t - 0.5) * 2, 0.6) * 0.5;
 
   const history = rewindSnapshot;
-
   if (!history || history.length < 2) return;
 
-  const index =
-    Math.floor(
-      (1 - eased) * (history.length - 1)
-    );
+  const indexFloat =
+    (1 - pressureCurve) * (history.length - 1);
 
-  const safeIndex =
-    Math.max(
-      0,
-      Math.min(index, history.length - 2)
-    );
+  const i = Math.floor(indexFloat);
+  const next = Math.min(i + 1, history.length - 1);
 
-  const p1 = history[safeIndex];
-  const p2 = history[safeIndex + 1];
+  const p1 = history[i];
+  const p2 = history[next];
 
   if (!p1 || !p2) return;
 
-  // smooth interpolation
-  const blend =
-((1 - eased) * (history.length - 1)) % 1;
+  const blend = indexFloat - i;
 
-  ball.x =
-    p1.x + (p2.x - p1.x) * blend;
+  ball.x = p1.x + (p2.x - p1.x) * blend;
+  ball.y = p1.y + (p2.y - p1.y) * blend;
 
-  ball.y =
-    p1.y + (p2.y - p1.y) * blend;
+  // optional: light brick check only every few frames (smoother)
+  if (i % 3 === 0) {
+    checkRewindBrickHits();
+  }
+if (Math.random() < 0.03) {
+  const future = rewindSnapshot[Math.min(i + 20, rewindSnapshot.length - 1)];
 
-  // destroy bricks during rewind
-  checkRewindBrickHits();
+  if (future) {
+    ctx.beginPath();
+    ctx.arc(future.x, future.y, ball.radius + 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255,0,255,0.3)";
+    ctx.fill();
+  }
+}
 
-  // rewind glow
-  ctx.save();
-
-  ctx.globalAlpha = 0.4;
-
-  ctx.beginPath();
-  ctx.arc(
-    ball.x,
-    ball.y,
-    ball.radius + 6,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fillStyle = "violet";
-  ctx.fill();
-
-  ctx.restore();
 }
 
 function togglePause() {
@@ -2539,13 +2537,13 @@ historyIndex = (historyIndex + 1) % MAX_HISTORY;
 if (rewinding) {
   rewindBall();
   drawBall();
-  drawParticles();
+  if (particles.length) drawParticles();
 } else {
   movePaddle();
   moveBall();
   brickCollision(); // 🔥 THIS WAS MISSING
   drawBall();
-  drawParticles();
+  if (particles.length) drawParticles();
 }
 
   drawBricks();
