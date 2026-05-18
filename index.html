@@ -1159,6 +1159,7 @@ let triangleSpeed = 0.9;
 let triangleInterval;
 let bitesStartTime = 0;
 let triangleActive = false;
+let triangles = [];
 
 
 
@@ -1813,6 +1814,9 @@ if (Math.abs(ball.speedX) < MIN_HORIZONTAL) {
   ball.speedX =
     MIN_HORIZONTAL * (ball.speedX < 0 ? -1 : 1);
 }
+
+} // <-- ADD THIS
+
 function activateCMoon() {
   const now =
   performance.now() - totalPausedTime;
