@@ -118,80 +118,6 @@ transform: translateZ(0);
     /* 💥 BITES THE DUST EFFECT */
    
 
-  .bites-effect {
-
-  animation:
-    bitesRealityCollapse 8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-
-  transform-origin: center;
-}
-
-@keyframes bitesRealityCollapse {
-
-  0% {
-    filter:
-      brightness(1)
-      contrast(1)
-      saturate(1)
-      hue-rotate(0deg);
-
-    transform:
-      scale(1)
-      rotate(0deg);
-  }
-
-  15% {
-
-    filter:
-      brightness(2)
-      contrast(1.6)
-      saturate(1.8)
-      hue-rotate(40deg);
-
-    transform:
-      scale(1.01)
-      rotate(-0.4deg);
-  }
-
-  40% {
-
-    filter:
-      brightness(0.5)
-      contrast(2.2)
-      saturate(2)
-      hue-rotate(180deg);
-
-    transform:
-      scale(0.985)
-      rotate(0.6deg);
-  }
-
-  70% {
-
-    filter:
-      brightness(1.5)
-      contrast(1.4)
-      saturate(1.6)
-      hue-rotate(300deg);
-
-    transform:
-      scale(1.01)
-      rotate(-0.25deg);
-  }
-
-  100% {
-
-    filter:
-      brightness(1)
-      contrast(1)
-      saturate(1)
-      hue-rotate(360deg);
-
-    transform:
-      scale(1)
-      rotate(0deg);
-  }
-}
 
     @keyframes fadeInUp {
   from {
@@ -741,26 +667,126 @@ will-change: transform, opacity, filter;
   overflow: hidden;
 }
 
-.triangle {
+/* =========================
+   BITES THE DUST REWORK
+========================= */
+
+.bites-world {
+  animation:
+    bitesCollapse 1.2s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+
+@keyframes bitesCollapse {
+
+  0% {
+    filter:
+      brightness(1)
+      contrast(1)
+      saturate(1);
+  }
+
+  20% {
+    filter:
+      brightness(3)
+      contrast(2)
+      saturate(2)
+      hue-rotate(40deg);
+  }
+
+  45% {
+    filter:
+      brightness(0.35)
+      contrast(2.5)
+      saturate(2.5)
+      blur(3px)
+      hue-rotate(120deg);
+  }
+
+  100% {
+    filter:
+      brightness(0.75)
+      contrast(1.7)
+      saturate(1.6)
+      blur(1px)
+      hue-rotate(280deg);
+  }
+}
+
+/* rewind overlay */
+
+#rewindOverlay {
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+
+  z-index: 95000;
+
+  opacity: 0;
+
+  background:
+    radial-gradient(circle at center,
+      rgba(255,0,255,0.18) 0%,
+      rgba(120,0,255,0.18) 25%,
+      rgba(0,0,0,0.92) 100%);
+
+  mix-blend-mode: screen;
+
+  backdrop-filter: blur(0px);
+}
+
+/* temporal shards */
+
+.temporalShard {
+
   position: absolute;
 
-  width: 0;
-  height: 0;
+  width: 140px;
+  height: 3px;
 
-  border-top: 14px solid transparent;
-  border-bottom: 14px solid transparent;
-  border-right: 24px solid violet;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(255,120,255,0.9),
+      transparent
+    );
 
-  opacity: 0.9;
+  opacity: 0.7;
+
+  transform-origin: center;
 
   filter:
-    drop-shadow(0 0 8px violet)
-    drop-shadow(0 0 18px hotpink);
+    blur(0.5px)
+    drop-shadow(0 0 12px violet);
 
-will-change: transform, opacity;
-transform: translateZ(0);
-  
-  transform: translateY(-50%);
+  will-change:
+    transform,
+    opacity;
+}
+
+/* rewind pulse */
+
+@keyframes rewindPulse {
+
+  0% {
+    transform:
+      scale(1)
+      rotate(0deg);
+  }
+
+  50% {
+    transform:
+      scale(1.02)
+      rotate(-0.4deg);
+  }
+
+  100% {
+    transform:
+      scale(1)
+      rotate(0deg);
+  }
 }
 .bitesRing {
   width: 140px;
@@ -1064,6 +1090,9 @@ transform: translateZ(0);
 <div id="standFx"></div>
 <div id="triangleField"></div>
 
+<div id="rewindOverlay"></div>
+<div id="rewindShards"></div>
+
 <div id="cooldownUI" class="hidden-ui">
   
   <div class="cooldownCard">
@@ -1201,6 +1230,11 @@ function updateCamera() {
   targetCameraX *= 0.82;
   targetCameraY *= 0.82;
 
+  if (paused) {
+  targetCameraX *= 0.6;
+  targetCameraY *= 0.6;
+}
+
   cameraX += (targetCameraX - cameraX) * 0.12;
   cameraY += (targetCameraY - cameraY) * 0.12;
 
@@ -1274,8 +1308,7 @@ function resetTriangle(tri, offsetX = window.innerWidth) {
 
 function updateTriangles() {
 
-if (!triangleActive) {
-
+if (!triangleActive || paused) {
   for (const tri of triangles) {
     tri.style.opacity = "0";
   }
@@ -1672,11 +1705,13 @@ const ramp = () => {
 ramp();
 
   ball.speedX = 0;
-ball.speedY = 0;
+  ball.speedY = 0;
+
+  ballHistory.fill(null);
+historyIndex = 0;
 
   // VISUAL MODE
-  document.body.classList.add("bites-effect");
-
+document.body.classList.add("bites-world");
   document.body.style.animation =
   "temporalMelt 8s ease-in-out";
 
@@ -2115,7 +2150,7 @@ ctx.globalAlpha = 1.0;
 
 function brickCollision() {
 
-  if (paused) return;
+  if (paused || rewinding) return;
   if (timeStopped) return;
 
   for (let r = 0; r < brickInfo.rows; r++) {
@@ -2322,7 +2357,7 @@ function drawLives() {
 // =====================
 function movePaddle() {
 
-  if (paused) return;
+  if (paused || rewinding) return;
   
   const targetVelocity = paddle.dx;
 
@@ -2340,7 +2375,7 @@ paddle.x += paddleVelocity;
 
 function moveBall() {
 
-  if (paused) return;
+  if (paused || rewinding) return;
   
   if (timeStopped || bitesActive) return;
 
@@ -2441,8 +2476,7 @@ function rewindBall() {
 
   // smooth rewind curve
 const eased =
-  Math.sin(progress * Math.PI / 2) *
-  Math.pow(progress, 0.35);
+  Math.pow(progress, 0.6);
 
   const history = rewindSnapshot;
 
@@ -2675,6 +2709,9 @@ historyIndex = (historyIndex + 1) % MAX_HISTORY;
 }
 
 if (rewinding) {
+  ball.speedX = 0;
+  ball.speedY = 0;
+
   rewindBall();
   drawBall();
   drawParticles();
