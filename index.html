@@ -116,15 +116,82 @@ transform: translateZ(0);
     }
 
     /* 💥 BITES THE DUST EFFECT */
-    .bites-effect {
-      animation: bitesPulse 0.4s infinite;
-    }
+   
 
-    @keyframes bitesPulse {
-      0% { filter: hue-rotate(0deg) brightness(1); }
-      50% { filter: hue-rotate(260deg) brightness(1.4); }
-      100% { filter: hue-rotate(0deg) brightness(1); }
-    }
+  .bites-effect {
+
+  animation:
+    bitesRealityCollapse 8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+
+  transform-origin: center;
+}
+
+@keyframes bitesRealityCollapse {
+
+  0% {
+    filter:
+      brightness(1)
+      contrast(1)
+      saturate(1)
+      hue-rotate(0deg);
+
+    transform:
+      scale(1)
+      rotate(0deg);
+  }
+
+  15% {
+
+    filter:
+      brightness(2)
+      contrast(1.6)
+      saturate(1.8)
+      hue-rotate(40deg);
+
+    transform:
+      scale(1.01)
+      rotate(-0.4deg);
+  }
+
+  40% {
+
+    filter:
+      brightness(0.5)
+      contrast(2.2)
+      saturate(2)
+      hue-rotate(180deg);
+
+    transform:
+      scale(0.985)
+      rotate(0.6deg);
+  }
+
+  70% {
+
+    filter:
+      brightness(1.5)
+      contrast(1.4)
+      saturate(1.6)
+      hue-rotate(300deg);
+
+    transform:
+      scale(1.01)
+      rotate(-0.25deg);
+  }
+
+  100% {
+
+    filter:
+      brightness(1)
+      contrast(1)
+      saturate(1)
+      hue-rotate(360deg);
+
+    transform:
+      scale(1)
+      rotate(0deg);
+  }
+}
 
     @keyframes fadeInUp {
   from {
@@ -292,16 +359,13 @@ will-change: transform, opacity, filter;
 
   transform:
     translate(-50%, -50%)
-    rotate(0deg);
+    rotate(0deg)
+    scale(0.4);
 
-  font-size: 90px;
-  font-weight: bold;
+  font-size: 180px; /* TWICE AS BIG */
+  font-weight: 900;
 
-  color: cyan;
-
-  text-shadow:
-    0 0 20px cyan,
-    0 0 40px deepskyblue;
+  color: #8ffcff;
 
   opacity: 0;
 
@@ -309,9 +373,24 @@ will-change: transform, opacity, filter;
 
   pointer-events: none;
 
+  text-shadow:
+    0 0 10px rgba(255,255,255,0.9),
+    0 0 25px cyan,
+    0 0 60px deepskyblue,
+    0 0 120px rgba(0,180,255,0.9);
+
+  filter:
+    drop-shadow(0 0 20px cyan);
+
+  will-change:
+    transform,
+    opacity,
+    filter;
+
   transition:
-    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.4s ease;
+    transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.5s ease,
+    filter 0.8s ease;
 }
 
 .spin-left {
@@ -1104,31 +1183,32 @@ let highlightPoints = [];
 
 let cameraX = 0;
 let cameraY = 0;
-let cameraVX = 0;
-let cameraVY = 0;
+
+let targetCameraX = 0;
+let targetCameraY = 0;
 
 function cameraImpact(intensity = 12) {
 
-  cameraVX +=
+  targetCameraX +=
     (Math.random() - 0.5) * intensity;
 
-  cameraVY +=
+  targetCameraY +=
     (Math.random() - 0.5) * intensity;
 }
 
 function updateCamera() {
 
-  cameraVX *= 0.82;
-  cameraVY *= 0.82;
+  targetCameraX *= 0.82;
+  targetCameraY *= 0.82;
 
-  cameraX += cameraVX;
-  cameraY += cameraVY;
-
-  cameraX *= 0.9;
-  cameraY *= 0.9;
+  cameraX += (targetCameraX - cameraX) * 0.12;
+  cameraY += (targetCameraY - cameraY) * 0.12;
 
   canvas.style.transform =
-    `translate(${cameraX}px, ${cameraY}px)`;
+    `
+    translate(${cameraX}px, ${cameraY}px)
+    rotate(${cameraX * 0.04}deg)
+    `;
 }
 
 // ======================
@@ -1563,6 +1643,34 @@ function activateBites() {
   rewindStartTime = performance.now();
 
 
+  let timeScale = 0;
+
+const ramp = () => {
+
+  const elapsed =
+    performance.now() - rewindStartTime;
+
+  const t =
+    Math.min(elapsed / 1400, 1);
+
+  const eased =
+    easeInOutCubic(t);
+
+  timeScale = eased;
+
+  canvas.style.filter = `
+    blur(${8 * eased}px)
+    contrast(${1 + eased})
+    saturate(${1.4 + eased})
+  `;
+
+  if (t < 1) {
+    requestAnimationFrame(ramp);
+  }
+};
+
+ramp();
+
   ball.speedX = 0;
 ball.speedY = 0;
 
@@ -1641,12 +1749,15 @@ ball.speedY = 0;
 
   bitesSyncInterval = setInterval(() => {
 
-    triangleSpeed =
-      Math.max(
-        2,
-        Math.abs(ball.speedX) +
-        Math.abs(ball.speedY)
-      );
+  const targetSpeed =
+  Math.max(
+    3,
+    Math.abs(ball.speedX) +
+    Math.abs(ball.speedY)
+  );
+
+triangleSpeed +=
+  (targetSpeed - triangleSpeed) * 0.08;
 
   }, 100);
 
@@ -1748,7 +1859,11 @@ if (dir === 1) {
 else {
 
   arrow.style.transform =
-    "translate(-50%, -50%) rotate(-90deg)";
+  `
+  translate(-50%, -50%)
+  rotate(90deg)
+  scale(1.25)
+  `;
 }
 
 setTimeout(() => {
@@ -1756,8 +1871,12 @@ setTimeout(() => {
   arrow.style.opacity = "0";
 
   // reset back upward
-  arrow.style.transform =
-    "translate(-50%, -50%) rotate(0deg)";
+ arrow.style.transform =
+  `
+  translate(-50%, -50%)
+  rotate(0deg)
+  scale(0.4)
+  `;
 
 }, 1200);
 
@@ -2346,9 +2465,11 @@ const eased =
   if (!p1 || !p2) return;
 
   // smooth interpolation
-  const blend =
-((1 - eased) * (history.length - 1)) % 1;
+ const raw =
+  (1 - eased) * (history.length - 1);
 
+const blend =
+  raw - Math.floor(raw);
   ball.x =
     p1.x + (p2.x - p1.x) * blend;
 
@@ -2500,6 +2621,23 @@ function draw() {
   lastFrameTime = now;
   updateCamera();
   // fully clears old frame
+
+
+  if (rewinding) {
+
+  const elapsed =
+    performance.now() - rewindStartTime;
+
+  const t =
+    Math.min(elapsed / rewindDuration, 1);
+
+  const pull =
+    Math.sin(t * Math.PI) * 0.015;
+
+  canvas.style.transform +=
+    ` scale(${1 + pull})`;
+}
+  
 ctx.clearRect(
   0,
   0,
